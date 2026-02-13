@@ -1,93 +1,195 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>anyGem AI v56.5</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>anyGem v56.5 : Fixed Layout</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
-        body { background: #020617; color: #e2e8f0; height: 100vh; display: flex; }
-        #sidebar { width: 260px; background: #0f172a; border-right: 1px solid #1e293b; display: flex; flex-direction: column; }
-        .history-item { padding: 10px; cursor: pointer; border-radius: 8px; margin: 5px 10px; font-size: 13px; color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .history-item:hover { background: #1e293b; color: white; }
-        .history-item.active { background: #10b98122; color: #10b981; }
-        #chat-window { flex: 1; overflow-y: auto; padding: 40px; }
-        .msg-bubble { max-width: 80%; padding: 15px; border-radius: 15px; margin-bottom: 20px; line-height: 1.6; }
-        .user .msg-bubble { background: #059669; margin-left: auto; }
-        .ai .msg-bubble { background: #1e293b; border: 1px solid #334155; }
-        input, select, textarea { background: #1e293b; border: 1px solid #334155; color: white; padding: 10px; border-radius: 8px; }
+        :root { --bg-dark: #020617; --bg-sidebar: #0f172a; --bg-panel: #1e293b; --accent: #10b981; --text: #e2e8f0; }
+        body { margin: 0; font-family: 'Segoe UI', Roboto, sans-serif; background-color: var(--bg-dark); color: var(--text); overflow: hidden; display: flex; height: 100vh; width: 100vw; }
+        
+        /* 側邊欄紀錄 */
+        #sidebar { width: 260px; background-color: var(--bg-sidebar); border-right: 1px solid #1e293b; display: flex; flex-direction: column; transition: transform 0.3s; z-index: 50; flex-shrink: 0; }
+        .history-item { padding: 10px 15px; cursor: pointer; border-radius: 8px; margin: 4px 10px; font-size: 13px; color: #94a3b8; display: flex; justify-content: space-between; align-items: center; transition: 0.2s; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .history-item:hover { background: rgba(255,255,255,0.05); color: white; }
+        .history-item.active { background: rgba(16, 185, 129, 0.15); color: var(--accent); border: 1px solid rgba(16, 185, 129, 0.2); }
+
+        /* 主對話區 */
+        #main-content { flex: 1; display: flex; flex-direction: column; height: 100%; position: relative; min-width: 0; }
+        #chat-window { flex: 1; overflow-y: auto; padding: 20px; scroll-behavior: smooth; }
+        
+        /* 訊息泡泡 */
+        .msg-row { display: flex; margin-bottom: 24px; width: 100%; }
+        .msg-row.user { justify-content: flex-end; }
+        .msg-bubble { max-width: 80%; padding: 16px; border-radius: 12px; line-height: 1.6; font-size: 14px; word-wrap: break-word; }
+        .msg-row.user .msg-bubble { background-color: #047857; color: white; border-bottom-right-radius: 2px; }
+        .msg-row.ai .msg-bubble { background-color: var(--bg-panel); border: 1px solid #334155; border-bottom-left-radius: 2px; }
+        
+        /* 輸入區域固定在底部 */
+        footer { padding: 20px; background: linear-gradient(0deg, var(--bg-dark) 70%, transparent); border-top: 1px solid #1e293b; flex-shrink: 0; }
+        .input-container { background: #1e293b; border: 1px solid #334155; border-radius: 12px; display: flex; align-items: flex-end; gap: 10px; padding: 10px; }
+        .input-container:focus-within { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.1); }
+        
+        textarea { background: transparent; color: white; border: none; padding: 8px; width: 100%; outline: none; resize: none; max-height: 200px; font-size: 14px; }
+        .btn-send { background: var(--accent); color: white; width: 40px; height: 40px; border-radius: 8px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+        .btn-send:hover { filter: brightness(1.1); }
+        .btn-send:disabled { opacity: 0.5; filter: grayscale(1); }
+
+        /* 行動裝置適配 */
+        @media (max-width: 768px) { #sidebar { position: fixed; left: 0; top: 0; bottom: 0; transform: translateX(-100%); } #sidebar.open { transform: translateX(0); } }
     </style>
 </head>
 <body>
+
     <aside id="sidebar">
-        <button onclick="newChat()" class="m-4 p-3 border border-slate-700 rounded-lg hover:bg-slate-800"><i class="fas fa-plus mr-2"></i> New Chat</button>
-        <div id="history-list" class="flex-1 overflow-y-auto"></div>
+        <div class="p-4 border-b border-slate-800">
+            <button onclick="startNewChat()" class="w-100 flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-white p-3 rounded-lg w-full text-sm font-bold transition">
+                <i class="fas fa-plus"></i> 新增對話
+            </button>
+        </div>
+        <div id="history-list" class="flex-1 overflow-y-auto py-2">
+            </div>
+        <div class="p-4 text-center text-[10px] text-slate-600 border-top border-slate-800">ANYGEM v56.5 ULTIMATE</div>
     </aside>
 
-    <main class="flex-1 flex flex-direction-column relative">
-        <header class="p-4 border-b border-slate-800 flex justify-between items-center">
-            <h1 class="font-bold text-xl">anyGem <span class="text-emerald-500">v56</span></h1>
-            <select id="mode"><option value="chat">Chat</option><option value="presentation">Slides</option><option value="drawing">Art</option></select>
+    <main id="main-content">
+        <header class="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-900/50 backdrop-blur-md">
+            <div class="flex items-center gap-3">
+                <button onclick="toggleSidebar()" class="md:hidden text-slate-400"><i class="fas fa-bars"></i></button>
+                <div class="font-black italic text-xl">anyGem <span class="text-emerald-500 text-xs not-italic font-bold ml-1">v56.5</span></div>
+            </div>
+            <select id="mode-select" class="bg-slate-800 border-slate-700 text-xs p-2 rounded-md outline-none">
+                <option value="chat">💬 智能對話</option>
+                <option value="drawing">🎨 藝術生圖</option>
+                <option value="presentation">📊 智能簡報</option>
+            </select>
         </header>
 
-        <div id="chat-window"></div>
+        <div id="chat-window">
+            <div class="msg-row ai"><div class="msg-bubble">👋 你好！我是 **Gem**。今天有什麼我可以幫你的？</div></div>
+        </div>
 
-        <footer class="p-4 bg-slate-900/50 backdrop-blur flex gap-3">
-            <input type="file" id="file" class="hidden" onchange="previewFile()">
-            <button onclick="document.getElementById('file').click()" class="w-12 h-12 rounded-lg bg-slate-800"><i class="fas fa-paperclip"></i></button>
-            <textarea id="input" class="flex-1 h-12" placeholder="Ask anything..."></textarea>
-            <button onclick="send()" class="bg-emerald-600 px-6 rounded-lg font-bold">SEND</button>
+        <footer>
+            <div id="file-preview" class="hidden mb-2 p-2 bg-slate-800 rounded-lg flex items-center justify-between">
+                <span class="text-xs text-emerald-400 flex items-center gap-2"><i class="fas fa-image"></i> <span id="file-name"></span></span>
+                <button onclick="clearFile()" class="text-slate-500">✕</button>
+            </div>
+            <div class="input-container">
+                <input type="file" id="file-input" class="hidden" accept="image/*">
+                <button onclick="document.getElementById('file-input').click()" class="text-slate-400 hover:text-emerald-400 p-2"><i class="fas fa-paperclip text-lg"></i></button>
+                <textarea id="user-input" rows="1" placeholder="輸入訊息..." oninput="autoGrow(this)"></textarea>
+                <button onclick="handleSend()" id="send-btn" class="btn-send"><i class="fas fa-paper-plane"></i></button>
+            </div>
         </footer>
     </main>
 
     <script>
-        const API = "https://script.google.com/macros/s/AKfycbwsng4RBCTX67my46U4fv7BhDYT0CIZt95dL7DNCFJTGUJLZFd_854vRGeUsQ1_BjG9/exec"; // ⚠️ 貼上你的 Web App URL
-        let sid = localStorage.getItem('sid') || "S"+Date.now();
-        localStorage.setItem('sid', sid);
+        // ⚠️ 貼上你的 GAS 部署網址
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbwsng4RBCTX67my46U4fv7BhDYT0CIZt95dL7DNCFJTGUJLZFd_854vRGeUsQ1_BjG9/exec"; 
+        
+        let sessId = localStorage.getItem('ANYGEM_SID') || "S" + Date.now();
+        localStorage.setItem('ANYGEM_SID', sessId);
+        let activeFile = null;
 
+        const input = document.getElementById('user-input');
+        const chatWindow = document.getElementById('chat-window');
+
+        // 頁面初始化
+        window.onload = fetchHistory;
+
+        // 自動調整文字框高度
+        function autoGrow(el) { el.style.height = "5px"; el.style.height = (el.scrollHeight) + "px"; }
+
+        // 切換側邊欄 (手機版用)
+        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
+
+        // 載入歷史紀錄清單
         async function fetchHistory() {
-            const r = await fetch(API, {method:'POST', body:JSON.stringify({mode:'system', action:'get_session_list'})});
-            const d = await r.json();
-            const list = document.getElementById('history-list');
-            list.innerHTML = d.sessions.map(s => `<div class="history-item ${s.id===sid?'active':''}" onclick="loadSession('${s.id}')">${s.title}</div>`).join('');
+            try {
+                const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ mode: 'system', action: 'get_session_list' }) });
+                const data = await res.json();
+                const list = document.getElementById('history-list');
+                list.innerHTML = data.sessions.map(s => `
+                    <div class="history-item ${s.id === sessId ? 'active' : ''}" onclick="loadSession('${s.id}')">
+                        <span class="flex items-center gap-2"><i class="far fa-comment-alt"></i> ${s.title}</span>
+                    </div>
+                `).join('');
+            } catch(e) { console.error("History fetch failed"); }
         }
 
+        // 載入特定對話內容
         async function loadSession(id) {
-            sid = id; localStorage.setItem('sid', id);
-            const r = await fetch(API, {method:'POST', body:JSON.stringify({mode:'system', action:'load_session', session_id:id})});
-            const d = await r.json();
-            document.getElementById('chat-window').innerHTML = '';
-            d.logs.forEach(l => addMsg(l.role, l.text));
+            sessId = id; localStorage.setItem('ANYGEM_SID', id);
+            chatWindow.innerHTML = '<div class="text-center p-10 text-slate-500">載入中...</div>';
             fetchHistory();
+            try {
+                const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ mode: 'system', action: 'load_session', session_id: id }) });
+                const data = await res.json();
+                chatWindow.innerHTML = '';
+                data.logs.forEach(l => addMessage(l.role, l.text));
+            } catch(e) { addMessage('ai', '載入失敗'); }
         }
 
-        function newChat() { sid = "S"+Date.now(); localStorage.setItem('sid', sid); document.getElementById('chat-window').innerHTML = ''; fetchHistory(); }
+        function startNewChat() { sessId = "S" + Date.now(); localStorage.setItem('ANYGEM_SID', sessId); chatWindow.innerHTML = ''; fetchHistory(); }
 
-        async function send() {
-            const msg = document.getElementById('input').value;
-            if(!msg) return;
-            addMsg('user', msg);
-            document.getElementById('input').value = '';
-            
-            const payload = { mode: document.getElementById('mode').value, message: msg, session_id: sid, options: {length: 6} };
-            const r = await fetch(API, {method:'POST', body:JSON.stringify(payload)});
-            const d = await r.json();
-            addMsg('ai', d.reply, d.image);
-            fetchHistory();
+        // 發送訊息
+        async function handleSend() {
+            const text = input.value.trim();
+            if (!text && !activeFile) return;
+
+            addMessage('user', text, { fileName: activeFile?.name });
+            const currentText = text;
+            input.value = ''; input.style.height = '40px';
+            document.getElementById('send-btn').disabled = true;
+
+            const payload = {
+                mode: document.getElementById('mode-select').value,
+                session_id: sessId,
+                message: currentText,
+                options: { theme: 'modern_blue', length: 6 }
+            };
+
+            if (activeFile) {
+                const base64 = await toBase64(activeFile);
+                payload.file_data = base64.split(',')[1];
+                payload.mime_type = activeFile.type;
+                clearFile();
+            }
+
+            try {
+                const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(payload) });
+                const data = await res.json();
+                if(data.status === 'success') {
+                    addMessage('ai', data.reply, { image: data.image });
+                    fetchHistory();
+                } else { addMessage('ai', 'Error: ' + data.error); }
+            } catch(e) { addMessage('ai', '連線失敗'); } finally { document.getElementById('send-btn').disabled = false; }
         }
 
-        function addMsg(role, text, img) {
-            const div = document.createElement('div');
-            div.className = `flex ${role === 'user' ? 'user' : 'ai'}`;
-            let content = marked.parse(text);
-            if(img) content += `<img src="data:image/png;base64,${img}" class="mt-4">`;
-            div.innerHTML = `<div class="msg-bubble">${content}</div>`;
-            document.getElementById('chat-window').appendChild(div);
-            document.getElementById('chat-window').scrollTop = 99999;
+        function addMessage(role, text, meta = {}) {
+            const row = document.createElement('div'); row.className = `msg-row ${role}`;
+            let content = "";
+            if (meta.fileName) content += `<div class="text-[10px] opacity-50 mb-1">📎 ${meta.fileName}</div>`;
+            if (meta.image) content += `<img src="data:image/png;base64,${meta.image}" class="rounded-lg mb-3 shadow-lg"><br>`;
+            if (text) content += marked.parse(text);
+            row.innerHTML = `<div class="msg-bubble shadow-sm">${content}</div>`;
+            chatWindow.appendChild(row);
+            chatWindow.scrollTop = chatWindow.scrollHeight;
         }
 
-        fetchHistory();
+        // 檔案處理
+        document.getElementById('file-input').onchange = (e) => {
+            activeFile = e.target.files[0];
+            if(activeFile) {
+                document.getElementById('file-preview').classList.remove('hidden');
+                document.getElementById('file-name').innerText = activeFile.name;
+            }
+        };
+        function clearFile() { activeFile = null; document.getElementById('file-preview').classList.add('hidden'); }
+        function toBase64(f) { return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(f); }); }
     </script>
 </body>
 </html>
