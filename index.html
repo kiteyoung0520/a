@@ -2,95 +2,165 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>anyGem v56.8 : Ultimate Suite</title>
+    <title>anyGem v56.8 : Layout Fixed</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
         :root { --bg-dark: #020617; --bg-sidebar: #0f172a; --bg-panel: #1e293b; --accent: #10b981; --text: #e2e8f0; }
         body { margin: 0; font-family: 'Segoe UI', Roboto, sans-serif; background-color: var(--bg-dark); color: var(--text); overflow: hidden; display: flex; height: 100vh; width: 100vw; }
-        #sidebar { width: 260px; background-color: var(--bg-sidebar); border-right: 1px solid #1e293b; display: flex; flex-direction: column; flex-shrink: 0; transition: 0.3s; }
+        
+        /* 側邊欄紀錄 */
+        #sidebar { width: 260px; background-color: var(--bg-sidebar); border-right: 1px solid #1e293b; display: flex; flex-direction: column; flex-shrink: 0; transition: transform 0.3s; z-index: 50; }
+        
+        /* 主對話區容器 */
         #main-content { flex: 1; display: flex; flex-direction: column; height: 100%; min-width: 0; position: relative; }
-        #chat-window { flex: 1; overflow-y: auto; padding: 24px; scroll-behavior: smooth; }
-        .history-item { padding: 10px 15px; cursor: pointer; border-radius: 8px; margin: 4px 10px; font-size: 13px; color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .history-item.active { background: rgba(16, 185, 129, 0.15); color: var(--accent); border: 1px solid rgba(16, 185, 129, 0.2); }
+        
+        /* 滾動對話窗 */
+        #chat-window { flex: 1; overflow-y: auto; padding: 20px; scroll-behavior: smooth; display: flex; flex-direction: column; }
+        
+        /* 訊息泡泡佈局 */
         .msg-row { display: flex; margin-bottom: 24px; width: 100%; flex-direction: column; }
         .msg-row.user { align-items: flex-end; }
-        .msg-bubble { max-width: 85%; padding: 16px; border-radius: 12px; font-size: 14px; line-height: 1.6; position: relative; }
-        .user .msg-bubble { background: #047857; color: white; border-bottom-right-radius: 2px; }
-        .ai .msg-bubble { background: var(--bg-panel); border: 1px solid #334155; border-bottom-left-radius: 2px; }
-        .copy-btn { margin-top: 8px; font-size: 11px; color: #64748b; cursor: pointer; display: flex; align-items: center; gap: 4px; justify-content: flex-end; }
-        footer { padding: 20px; background: linear-gradient(0deg, var(--bg-dark) 70%, transparent); border-top: 1px solid #1e293b; }
-        .input-box { background: #1e293b; border: 1px solid #334155; border-radius: 12px; display: flex; align-items: flex-end; padding: 10px; gap: 10px; }
-        .pulse-loader { animation: pulse 2s infinite; background: rgba(16, 185, 129, 0.1); padding: 12px; border-radius: 12px; display: inline-flex; align-items: center; gap: 8px; color: var(--accent); }
-        @keyframes pulse { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
-        @media (max-width: 768px) { #sidebar { position: fixed; transform: translateX(-100%); z-index: 100; height: 100%; } #sidebar.open { transform: translateX(0); } }
+        .msg-row.ai { align-items: flex-start; }
+        .msg-bubble { max-width: 85%; padding: 16px; border-radius: 12px; font-size: 14px; line-height: 1.6; position: relative; word-wrap: break-word; }
+        .user .msg-bubble { background-color: #047857; color: white; border-bottom-right-radius: 2px; }
+        .ai .msg-bubble { background-color: var(--bg-panel); border: 1px solid #334155; border-bottom-left-radius: 2px; }
+        
+        /* 複製按鈕 */
+        .copy-btn { margin-top: 8px; font-size: 11px; color: #64748b; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: 0.2s; }
+        .copy-btn:hover { color: var(--accent); }
+
+        /* 底部輸入區固定 */
+        footer { padding: 20px; background: linear-gradient(0deg, var(--bg-dark) 80%, transparent); border-top: 1px solid #1e293b; flex-shrink: 0; }
+        .input-box-wrapper { background: #1e293b; border: 1px solid #334155; border-radius: 12px; display: flex; align-items: flex-end; padding: 10px; gap: 10px; }
+        .input-box-wrapper:focus-within { border-color: var(--accent); }
+        
+        textarea { background: transparent; color: white; border: none; padding: 8px; width: 100%; outline: none; resize: none; max-height: 180px; font-size: 14px; line-height: 1.5; }
+        
+        /* 按鈕固定尺寸，防止變形 */
+        .btn-action { width: 40px; height: 40px; border-radius: 8px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+        .btn-send { background-color: var(--accent); color: white; }
+        .btn-send:disabled { opacity: 0.5; filter: grayscale(1); }
+
+        /* 創意 Loading 脈衝 */
+        .pulse-loader { animation: pulse 2s infinite; background: rgba(16, 185, 129, 0.1); padding: 12px 18px; border-radius: 10px; display: inline-flex; align-items: center; gap: 10px; color: var(--accent); font-size: 13px; }
+        @keyframes pulse { 0%, 100% { opacity: 0.7; } 50% { opacity: 1; } }
+
+        @media (max-width: 768px) { #sidebar { position: fixed; left: 0; height: 100%; transform: translateX(-100%); } #sidebar.open { transform: translateX(0); } }
     </style>
 </head>
 <body>
+
     <aside id="sidebar">
-        <div class="p-4 border-b border-slate-800"><button onclick="startNewChat()" class="w-full bg-slate-800 hover:bg-slate-700 p-3 rounded-lg text-sm font-bold transition flex items-center justify-center gap-2"><i class="fas fa-plus"></i> 新增對話</button></div>
+        <div class="p-4 border-b border-slate-800">
+            <button onclick="startNewChat()" class="w-full bg-slate-800 hover:bg-slate-700 p-3 rounded-lg text-sm font-bold transition flex items-center justify-center gap-2">
+                <i class="fas fa-plus"></i> 新增對話
+            </button>
+        </div>
         <div id="history-list" class="flex-1 overflow-y-auto py-2"></div>
+        <div class="p-4 text-center text-[10px] text-slate-600 border-t border-slate-800 uppercase tracking-widest">anyGem v56.8</div>
     </aside>
 
-    <main id="main-content">
+    <div id="main-content">
         <header class="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-900/50 backdrop-blur-md">
-            <div class="flex items-center gap-3"><button onclick="toggleSidebar()" class="md:hidden"><i class="fas fa-bars"></i></button><div class="font-black italic text-xl">anyGem <span class="text-emerald-500 text-xs not-italic font-bold">v56.8</span></div></div>
-            <select id="mode-select" onchange="updateUI()" class="bg-slate-800 text-xs p-2 rounded-md outline-none text-emerald-400 font-bold"><option value="chat">💬 對話</option><option value="drawing">🎨 生圖</option><option value="presentation">📊 簡報</option></select>
+            <div class="flex items-center gap-3">
+                <button onclick="toggleSidebar()" class="md:hidden text-slate-400"><i class="fas fa-bars"></i></button>
+                <div class="font-black italic text-xl">anyGem <span class="text-emerald-500 text-xs not-italic font-bold">v56.8</span></div>
+            </div>
+            <select id="mode-select" onchange="updateUI()" class="bg-slate-800 text-xs p-2 rounded-md outline-none text-emerald-400 font-bold border border-slate-700">
+                <option value="chat">💬 智能對話</option>
+                <option value="drawing">🎨 藝術生圖</option>
+                <option value="presentation">📊 智能簡報</option>
+            </select>
         </header>
 
-        <div id="chat-window"></div>
+        <div id="chat-window">
+            <div class="msg-row ai"><div class="msg-bubble shadow-lg">👋 你好！我是 **Gem**。你的系統介面已重新校準，現在可以流暢使用了。</div></div>
+        </div>
 
         <footer>
-            <div id="ppt-studio" class="hidden mb-4 p-4 bg-slate-800/50 border border-slate-700 rounded-xl space-y-3">
+            <div id="ppt-studio" class="hidden mb-4 p-4 bg-slate-800/80 border border-emerald-500/20 rounded-xl space-y-4">
                 <div class="grid grid-cols-2 gap-4">
-                    <div><label class="text-[10px] text-emerald-500 block">主色 (Primary)</label><input type="color" id="ppt-p-color" value="#10b981" class="w-full h-8 rounded"></div>
-                    <div><label class="text-[10px] text-emerald-500 block">視覺風格 (Vibe)</label><select id="ppt-vibe" class="w-full bg-slate-700 text-[10px] p-1 rounded"><option value="Modern Corporate">商務專業</option><option value="Cyberpunk Neon">科幻霓虹</option><option value="Minimalist Flat">極簡向量</option></select></div>
+                    <div>
+                        <label class="text-[10px] text-emerald-500 font-bold block mb-1">主色調</label>
+                        <input type="color" id="ppt-p-color" value="#10b981" class="w-full h-8 rounded border-none cursor-pointer">
+                    </div>
+                    <div>
+                        <label class="text-[10px] text-emerald-500 font-bold block mb-1">視覺風格</label>
+                        <select id="ppt-vibe" class="w-full bg-slate-700 text-xs p-1.5 rounded outline-none">
+                            <option value="Business Professional">商務專業</option>
+                            <option value="Cyberpunk Neon">科幻霓虹</option>
+                            <option value="Minimalist Vector">極簡向量</option>
+                            <option value="Soft Watercolor">溫潤水彩</option>
+                        </select>
+                    </div>
                 </div>
             </div>
-            <div id="file-preview" class="hidden mb-2 p-2 bg-slate-800 rounded flex justify-between items-center"><span class="text-xs text-emerald-400" id="file-name"></span><button onclick="clearFile()">✕</button></div>
-            <div class="input-box">
+
+            <div id="file-preview" class="hidden mb-2 p-2 bg-slate-800 border border-emerald-500/30 rounded flex justify-between items-center">
+                <span class="text-xs text-emerald-400" id="file-name"></span>
+                <button onclick="clearFile()" class="text-slate-500 p-1">✕</button>
+            </div>
+
+            <div class="input-box-wrapper shadow-xl">
                 <input type="file" id="file-input" class="hidden" onchange="previewFile()">
-                <button onclick="document.getElementById('file-input').click()" class="text-slate-400 p-2"><i class="fas fa-paperclip"></i></button>
+                <button onclick="document.getElementById('file-input').click()" class="btn-action text-slate-400 hover:text-emerald-400"><i class="fas fa-paperclip text-lg"></i></button>
                 <textarea id="user-input" rows="1" placeholder="輸入訊息..." oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea>
-                <button onclick="handleSend()" id="send-btn" class="bg-emerald-500 text-white w-10 h-10 rounded-lg flex items-center justify-center"><i class="fas fa-paper-plane"></i></button>
+                <button onclick="handleSend()" id="send-btn" class="btn-action btn-send"><i class="fas fa-paper-plane"></i></button>
             </div>
         </footer>
-    </main>
+    </div>
 
     <script>
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbwsng4RBCTX67my46U4fv7BhDYT0CIZt95dL7DNCFJTGUJLZFd_854vRGeUsQ1_BjG9/exec"; // ⚠️ 請貼上部署網址
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbwsng4RBCTX67my46U4fv7BhDYT0CIZt95dL7DNCFJTGUJLZFd_854vRGeUsQ1_BjG9/exec"; 
+        
         let sessId = localStorage.getItem('ANYGEM_SID') || "S" + Date.now();
         localStorage.setItem('ANYGEM_SID', sessId);
         let activeFile = null;
 
         window.onload = () => { fetchHistory(); loadSession(sessId); };
 
-        function updateUI() { document.getElementById('ppt-studio').classList.toggle('hidden', document.getElementById('mode-select').value !== 'presentation'); }
+        function updateUI() { 
+            const isPPT = document.getElementById('mode-select').value === 'presentation';
+            document.getElementById('ppt-studio').classList.toggle('hidden', !isPPT);
+        }
+
         function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
         function startNewChat() { sessId = "S" + Date.now(); localStorage.setItem('ANYGEM_SID', sessId); document.getElementById('chat-window').innerHTML = ''; fetchHistory(); }
 
         async function fetchHistory() {
-            const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ mode: 'system', action: 'get_session_list' }) });
-            const data = await res.json();
-            document.getElementById('history-list').innerHTML = data.sessions.map(s => `<div class="history-item ${s.id === sessId ? 'active' : ''}" onclick="loadSession('${s.id}')">${s.title}</div>`).join('');
+            try {
+                const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ mode: 'system', action: 'get_session_list' }) });
+                const data = await res.json();
+                document.getElementById('history-list').innerHTML = data.sessions.map(s => `
+                    <div class="history-item ${s.id === sessId ? 'active' : ''}" onclick="loadSession('${s.id}')">
+                        <i class="far fa-comment-dots mr-2"></i> ${s.title}
+                    </div>
+                `).join('');
+            } catch(e) {}
         }
 
         async function loadSession(id) {
             sessId = id; localStorage.setItem('ANYGEM_SID', id);
-            document.getElementById('chat-window').innerHTML = '<div class="text-center p-10 animate-pulse text-slate-500 text-xs">載入記憶中...</div>';
-            const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ mode: 'system', action: 'load_session', session_id: id }) });
-            const data = await res.json();
-            document.getElementById('chat-window').innerHTML = '';
-            if(data.logs) data.logs.forEach(l => addMessage(l.role, l.text));
+            document.getElementById('chat-window').innerHTML = '<div class="text-center p-20 animate-pulse text-slate-600 text-xs">載入中...</div>';
             fetchHistory();
+            try {
+                const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ mode: 'system', action: 'load_session', session_id: id }) });
+                const data = await res.json();
+                document.getElementById('chat-window').innerHTML = '';
+                if(data.logs) data.logs.forEach(l => addMessage(l.role, l.text));
+            } catch(e) { addMessage('ai', '載入失敗'); }
         }
 
         async function handleSend() {
-            const msg = document.getElementById('user-input').value.trim();
+            const inputEl = document.getElementById('user-input');
+            const msg = inputEl.value.trim();
             if(!msg && !activeFile) return;
+
             addMessage('user', msg);
-            document.getElementById('user-input').value = '';
+            inputEl.value = ''; inputEl.style.height = 'auto';
+            document.getElementById('send-btn').disabled = true;
             setLoading(true);
 
             const payload = {
@@ -103,39 +173,61 @@
                     custom_theme: { bg: "#020617", primary: "#FFFFFF", accent: document.getElementById('ppt-p-color').value, text: "#e2e8f0" }
                 }
             };
-            if(activeFile) { const b64 = await toBase64(activeFile); payload.file_data = b64.split(',')[1]; payload.mime_type = activeFile.type; clearFile(); }
+            
+            if(activeFile) { 
+                const b64 = await toBase64(activeFile); 
+                payload.file_data = b64.split(',')[1]; 
+                payload.mime_type = activeFile.type; 
+                clearFile(); 
+            }
 
             try {
                 const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(payload) });
                 const data = await res.json();
                 setLoading(false);
-                addMessage('ai', data.reply, { image: data.image });
-                fetchHistory();
-            } catch(e) { setLoading(false); addMessage('ai', "連線失敗"); }
+                if(data.status === 'success') {
+                    addMessage('ai', data.reply, { image: data.image });
+                    fetchHistory();
+                } else { addMessage('ai', "🚨 錯誤：" + data.error); }
+            } catch(e) { setLoading(false); addMessage('ai', "❌ 連線失敗"); } finally { document.getElementById('send-btn').disabled = false; }
         }
 
         function addMessage(role, text, meta={}) {
             const row = document.createElement('div'); row.className = `msg-row ${role}`;
-            let html = `<div class="msg-bubble">${meta.image ? `<img src="data:image/png;base64,${meta.image}" class="rounded-lg mb-4">` : ''}${marked.parse(text || "")}</div>`;
+            let html = `<div class="msg-bubble shadow-md">`;
+            if(meta.image) html += `<img src="data:image/png;base64,${meta.image}" class="rounded-lg mb-4 border border-slate-700 shadow-xl">`;
+            html += marked.parse(text || "");
+            html += `</div>`;
             if(role === 'ai') html += `<div class="copy-btn" onclick="copyText(this, \`${text}\`)"><i class="far fa-copy"></i> 複製</div>`;
             row.innerHTML = html;
             document.getElementById('chat-window').appendChild(row);
             document.getElementById('chat-window').scrollTop = 999999;
         }
 
-        function copyText(btn, t) { navigator.clipboard.writeText(t); btn.innerHTML = '<i class="fas fa-check text-emerald-500"></i> 已複製'; setTimeout(()=>btn.innerHTML='<i class="far fa-copy"></i> 複製', 2000); }
+        function copyText(btn, t) { 
+            navigator.clipboard.writeText(t); 
+            const orig = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-check text-emerald-500"></i> 已複製'; 
+            setTimeout(() => btn.innerHTML = orig, 2000); 
+        }
 
         function setLoading(s) {
             const old = document.getElementById('ai-loader'); if(old) old.remove();
             if(s) {
                 const l = document.createElement('div'); l.id = 'ai-loader'; l.className = 'msg-row ai';
-                l.innerHTML = `<div class="pulse-loader"><i class="fas fa-magic fa-spin"></i> Gem 正在運算中...</div>`;
+                l.innerHTML = `<div class="pulse-loader"><i class="fas fa-magic fa-spin"></i> Gem 正在思考中...</div>`;
                 document.getElementById('chat-window').appendChild(l);
             }
         }
 
-        function previewFile() { activeFile = document.getElementById('file-input').files[0]; document.getElementById('file-preview').classList.remove('hidden'); document.getElementById('file-name').innerText = activeFile.name; }
-        function clearFile() { activeFile = null; document.getElementById('file-preview').classList.add('hidden'); }
+        function previewFile() { 
+            activeFile = document.getElementById('file-input').files[0]; 
+            if(activeFile) {
+                document.getElementById('file-preview').classList.remove('hidden'); 
+                document.getElementById('file-name').innerText = activeFile.name; 
+            }
+        }
+        function clearFile() { activeFile = null; document.getElementById('file-preview').classList.add('hidden'); document.getElementById('file-input').value = ''; }
         function toBase64(f) { return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(f); }); }
     </script>
 </body>
