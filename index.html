@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>anyGem v56.5 : Fixed Layout</title>
+    <title>anyGem v56.6 : Ultimate Suite</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
@@ -22,23 +22,31 @@
         #chat-window { flex: 1; overflow-y: auto; padding: 20px; scroll-behavior: smooth; }
         
         /* 訊息泡泡 */
-        .msg-row { display: flex; margin-bottom: 24px; width: 100%; }
+        .msg-row { display: flex; margin-bottom: 24px; width: 100%; position: relative; }
         .msg-row.user { justify-content: flex-end; }
-        .msg-bubble { max-width: 80%; padding: 16px; border-radius: 12px; line-height: 1.6; font-size: 14px; word-wrap: break-word; }
+        .msg-bubble { max-width: 80%; padding: 16px; border-radius: 12px; line-height: 1.6; font-size: 14px; word-wrap: break-word; position: relative; }
         .msg-row.user .msg-bubble { background-color: #047857; color: white; border-bottom-right-radius: 2px; }
         .msg-row.ai .msg-bubble { background-color: var(--bg-panel); border: 1px solid #334155; border-bottom-left-radius: 2px; }
         
-        /* 輸入區域固定在底部 */
+        /* 複製按鈕 */
+        .copy-btn { position: absolute; bottom: -20px; right: 0; font-size: 11px; color: #64748b; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: 0.2s; opacity: 0.6; }
+        .copy-btn:hover { color: var(--accent); opacity: 1; }
+
+        /* 創意 Loading 動畫 */
+        .pulse-loader { animation: pulse-bg 2s infinite; padding: 12px 20px; border-radius: 12px; background: rgba(16, 185, 129, 0.1); display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--accent); }
+        @keyframes pulse-bg { 0%, 100% { background: rgba(16, 185, 129, 0.05); } 50% { background: rgba(16, 185, 129, 0.15); } }
+        .typing-dot { width: 4px; height: 4px; background: var(--accent); border-radius: 50%; display: inline-block; animation: typing 1.4s infinite ease-in-out; }
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes typing { 0%, 80%, 100% { transform: translateY(0); } 40% { transform: translateY(-4px); } }
+
+        /* 底部輸入區域 */
         footer { padding: 20px; background: linear-gradient(0deg, var(--bg-dark) 70%, transparent); border-top: 1px solid #1e293b; flex-shrink: 0; }
         .input-container { background: #1e293b; border: 1px solid #334155; border-radius: 12px; display: flex; align-items: flex-end; gap: 10px; padding: 10px; }
-        .input-container:focus-within { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.1); }
-        
         textarea { background: transparent; color: white; border: none; padding: 8px; width: 100%; outline: none; resize: none; max-height: 200px; font-size: 14px; }
         .btn-send { background: var(--accent); color: white; width: 40px; height: 40px; border-radius: 8px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
-        .btn-send:hover { filter: brightness(1.1); }
-        .btn-send:disabled { opacity: 0.5; filter: grayscale(1); }
+        .btn-send:hover:not(:disabled) { filter: brightness(1.1); transform: scale(1.05); }
 
-        /* 行動裝置適配 */
         @media (max-width: 768px) { #sidebar { position: fixed; left: 0; top: 0; bottom: 0; transform: translateX(-100%); } #sidebar.open { transform: translateX(0); } }
     </style>
 </head>
@@ -46,42 +54,41 @@
 
     <aside id="sidebar">
         <div class="p-4 border-b border-slate-800">
-            <button onclick="startNewChat()" class="w-100 flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-white p-3 rounded-lg w-full text-sm font-bold transition">
+            <button onclick="startNewChat()" class="w-full flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-white p-3 rounded-lg text-sm font-bold transition">
                 <i class="fas fa-plus"></i> 新增對話
             </button>
         </div>
-        <div id="history-list" class="flex-1 overflow-y-auto py-2">
-            </div>
-        <div class="p-4 text-center text-[10px] text-slate-600 border-top border-slate-800">ANYGEM v56.5 ULTIMATE</div>
+        <div id="history-list" class="flex-1 overflow-y-auto py-2"></div>
+        <div class="p-4 text-center text-[10px] text-slate-600 border-t border-slate-800 uppercase tracking-widest">Powered by anyGem</div>
     </aside>
 
     <main id="main-content">
         <header class="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-900/50 backdrop-blur-md">
             <div class="flex items-center gap-3">
                 <button onclick="toggleSidebar()" class="md:hidden text-slate-400"><i class="fas fa-bars"></i></button>
-                <div class="font-black italic text-xl">anyGem <span class="text-emerald-500 text-xs not-italic font-bold ml-1">v56.5</span></div>
+                <div class="font-black italic text-xl">anyGem <span class="text-emerald-500 text-xs not-italic font-bold ml-1">v56.6</span></div>
             </div>
-            <select id="mode-select" class="bg-slate-800 border-slate-700 text-xs p-2 rounded-md outline-none">
-                <option value="chat">💬 智能對話</option>
+            <select id="mode-select" class="bg-slate-800 border-slate-700 text-xs p-2 rounded-md outline-none text-emerald-400 font-bold">
+                <option value="chat">💬 對話模式</option>
                 <option value="drawing">🎨 藝術生圖</option>
                 <option value="presentation">📊 智能簡報</option>
             </select>
         </header>
 
         <div id="chat-window">
-            <div class="msg-row ai"><div class="msg-bubble">👋 你好！我是 **Gem**。今天有什麼我可以幫你的？</div></div>
+            <div class="msg-row ai"><div class="msg-bubble">👋 你好！我是 **Gem**。你的貼身技術導師。準備好開始了嗎？</div></div>
         </div>
 
         <footer>
-            <div id="file-preview" class="hidden mb-2 p-2 bg-slate-800 rounded-lg flex items-center justify-between">
+            <div id="file-preview" class="hidden mb-2 p-2 bg-slate-800/50 border border-emerald-500/30 rounded-lg flex items-center justify-between">
                 <span class="text-xs text-emerald-400 flex items-center gap-2"><i class="fas fa-image"></i> <span id="file-name"></span></span>
-                <button onclick="clearFile()" class="text-slate-500">✕</button>
+                <button onclick="clearFile()" class="text-slate-500 hover:text-white">✕</button>
             </div>
             <div class="input-container">
                 <input type="file" id="file-input" class="hidden" accept="image/*">
-                <button onclick="document.getElementById('file-input').click()" class="text-slate-400 hover:text-emerald-400 p-2"><i class="fas fa-paperclip text-lg"></i></button>
+                <button onclick="document.getElementById('file-input').click()" class="text-slate-400 hover:text-emerald-400 p-2 transition"><i class="fas fa-paperclip text-lg"></i></button>
                 <textarea id="user-input" rows="1" placeholder="輸入訊息..." oninput="autoGrow(this)"></textarea>
-                <button onclick="handleSend()" id="send-btn" class="btn-send"><i class="fas fa-paper-plane"></i></button>
+                <button onclick="handleSend()" id="send-btn" class="btn-send shadow-lg shadow-emerald-500/20"><i class="fas fa-paper-plane"></i></button>
             </div>
         </footer>
     </main>
@@ -97,16 +104,11 @@
         const input = document.getElementById('user-input');
         const chatWindow = document.getElementById('chat-window');
 
-        // 頁面初始化
         window.onload = fetchHistory;
 
-        // 自動調整文字框高度
-        function autoGrow(el) { el.style.height = "5px"; el.style.height = (el.scrollHeight) + "px"; }
-
-        // 切換側邊欄 (手機版用)
+        function autoGrow(el) { el.style.height = "auto"; el.style.height = (el.scrollHeight) + "px"; }
         function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
 
-        // 載入歷史紀錄清單
         async function fetchHistory() {
             try {
                 const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ mode: 'system', action: 'get_session_list' }) });
@@ -114,16 +116,15 @@
                 const list = document.getElementById('history-list');
                 list.innerHTML = data.sessions.map(s => `
                     <div class="history-item ${s.id === sessId ? 'active' : ''}" onclick="loadSession('${s.id}')">
-                        <span class="flex items-center gap-2"><i class="far fa-comment-alt"></i> ${s.title}</span>
+                        <span class="history-title"><i class="far fa-comment-dots mr-2"></i>${s.title}</span>
                     </div>
                 `).join('');
-            } catch(e) { console.error("History fetch failed"); }
+            } catch(e) { console.error("History fail"); }
         }
 
-        // 載入特定對話內容
         async function loadSession(id) {
             sessId = id; localStorage.setItem('ANYGEM_SID', id);
-            chatWindow.innerHTML = '<div class="text-center p-10 text-slate-500">載入中...</div>';
+            chatWindow.innerHTML = '<div class="text-center p-10 text-slate-500 text-xs tracking-widest animate-pulse">正在重啟記憶模組...</div>';
             fetchHistory();
             try {
                 const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ mode: 'system', action: 'load_session', session_id: id }) });
@@ -135,15 +136,17 @@
 
         function startNewChat() { sessId = "S" + Date.now(); localStorage.setItem('ANYGEM_SID', sessId); chatWindow.innerHTML = ''; fetchHistory(); }
 
-        // 發送訊息
+        // --- 核心發送邏輯 ---
         async function handleSend() {
             const text = input.value.trim();
             if (!text && !activeFile) return;
 
             addMessage('user', text, { fileName: activeFile?.name });
             const currentText = text;
-            input.value = ''; input.style.height = '40px';
+            input.value = ''; input.style.height = 'auto';
             document.getElementById('send-btn').disabled = true;
+
+            setLoading(true); // 顯示創意 Loading
 
             const payload = {
                 mode: document.getElementById('mode-select').value,
@@ -162,22 +165,72 @@
             try {
                 const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(payload) });
                 const data = await res.json();
+                setLoading(false);
                 if(data.status === 'success') {
                     addMessage('ai', data.reply, { image: data.image });
                     fetchHistory();
-                } else { addMessage('ai', 'Error: ' + data.error); }
-            } catch(e) { addMessage('ai', '連線失敗'); } finally { document.getElementById('send-btn').disabled = false; }
+                } else { addMessage('ai', '🚨 系統錯誤: ' + data.error); }
+            } catch(e) { setLoading(false); addMessage('ai', '❌ 連線中斷'); } finally { document.getElementById('send-btn').disabled = false; }
         }
 
+        // --- 視覺組件：訊息泡泡與複製功能 ---
         function addMessage(role, text, meta = {}) {
             const row = document.createElement('div'); row.className = `msg-row ${role}`;
-            let content = "";
-            if (meta.fileName) content += `<div class="text-[10px] opacity-50 mb-1">📎 ${meta.fileName}</div>`;
-            if (meta.image) content += `<img src="data:image/png;base64,${meta.image}" class="rounded-lg mb-3 shadow-lg"><br>`;
-            if (text) content += marked.parse(text);
-            row.innerHTML = `<div class="msg-bubble shadow-sm">${content}</div>`;
+            let html = "";
+            if (meta.fileName) html += `<div class="text-[10px] opacity-50 mb-1">📎 ${meta.fileName}</div>`;
+            if (meta.image) html += `<img src="data:image/png;base64,${meta.image}" class="rounded-lg mb-4 border border-slate-700 shadow-xl"><br>`;
+            
+            // Markdown 解析
+            const parsedText = text ? marked.parse(text) : "";
+            
+            if (role === 'ai') {
+                html += `
+                    <div class="msg-bubble shadow-lg">
+                        ${parsedText}
+                        <div class="copy-btn" onclick="copyToClipboard(this, \`${text.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`)">
+                            <i class="far fa-copy"></i> 複製內容
+                        </div>
+                    </div>`;
+            } else {
+                html += `<div class="msg-bubble shadow-md">${parsedText}</div>`;
+            }
+            
+            row.innerHTML = html;
             chatWindow.appendChild(row);
             chatWindow.scrollTop = chatWindow.scrollHeight;
+        }
+
+        // 複製到剪貼簿與 UI 反饋
+        function copyToClipboard(btn, text) {
+            navigator.clipboard.writeText(text).then(() => {
+                const icon = btn.querySelector('i');
+                const originalHTML = btn.innerHTML;
+                btn.innerHTML = `<i class="fas fa-check text-emerald-500"></i> <span class="text-emerald-500">已複製</span>`;
+                setTimeout(() => { btn.innerHTML = originalHTML; }, 2000);
+            });
+        }
+
+        // 創意 Loading
+        function setLoading(show) {
+            const existing = document.getElementById('ai-loader');
+            if (existing) existing.remove();
+            if (show) {
+                const mode = document.getElementById('mode-select').value;
+                let statusText = "Gem 正在思考";
+                if (mode === 'drawing') statusText = "Gem 正在繪製草稿";
+                else if (mode === 'presentation') statusText = "Gem 正在規劃簡報排版";
+
+                const loader = document.createElement('div');
+                loader.id = 'ai-loader'; loader.className = 'msg-row ai';
+                loader.innerHTML = `
+                    <div class="pulse-loader shadow-lg">
+                        <i class="fas fa-microchip fa-spin"></i>
+                        <span>${statusText}</span>
+                        <div class="flex gap-1 ml-1"><span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span></div>
+                    </div>`;
+                chatWindow.appendChild(loader);
+                chatWindow.scrollTop = chatWindow.scrollHeight;
+            }
         }
 
         // 檔案處理
