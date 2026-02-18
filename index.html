@@ -127,7 +127,6 @@
         // ==========================================
         // 核心設定與狀態 (State)
         // ==========================================
-        // ⚠️ 必須填入你的 Google Apps Script Web App URL
         const GAS_URL = "https://script.google.com/macros/s/AKfycbwsng4RBCTX67my46U4fv7BhDYT0CIZt95dL7DNCFJTGUJLZFd_854vRGeUsQ1_BjG9/exec"; 
         
         let currentSessionId = generateUUID();
@@ -151,15 +150,21 @@
             this.style.height = (this.scrollHeight < 192 ? this.scrollHeight : 192) + 'px';
         });
 
+        // 🚀 修改點：支援手機版 Enter 正常換行
         userInput.addEventListener('keydown', function(e) {
             if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                if (!isWaiting) sendMessage();
+                const isMobile = window.innerWidth < 768 || navigator.maxTouchPoints > 0;
+                if (isMobile) {
+                    return; // 手機版不攔截，讓它自然換行
+                } else {
+                    e.preventDefault();
+                    if (!isWaiting) sendMessage();
+                }
             }
         });
 
         // ==========================================
-        // 🚀 多模態處理器 (圖片 & 文件邊緣解析)
+        // 多模態處理器 (圖片 & 文件邊緣解析)
         // ==========================================
         async function handleFileUpload(event) {
             const file = event.target.files[0];
@@ -240,7 +245,6 @@
             modal.classList.add('flex');
             document.body.style.overflow = 'hidden'; 
             
-            // 安全注入 HTML
             iframe.srcdoc = currentRenderCode;
         }
 
@@ -309,7 +313,7 @@
 
             } catch (err) {
                 removeLoading(loadingId);
-                appendMessage('ai', `❌ **系統發生錯誤**\n\`\`\`text\n${err.message}\n\`\`\``);
+                appendMessage('ai', `❌ 系統發生錯誤\n\`\`\`text\n${err.message}\n\`\`\``);
             } finally {
                 isWaiting = false;
                 sendBtn.disabled = false;
@@ -450,4 +454,3 @@
     </script>
 </body>
 </html>
-
