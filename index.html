@@ -35,6 +35,26 @@
 </head>
 <body class="h-screen flex overflow-hidden font-sans antialiased">
 
+    <div id="preview-modal" class="fixed inset-0 z-50 hidden bg-black/80 backdrop-blur-sm flex-col">
+        <div class="h-12 bg-[#1e1f22] border-b border-[#333] flex items-center justify-between px-4 flex-shrink-0">
+            <div class="flex items-center gap-2 text-gray-300">
+                <span class="material-symbols-rounded text-blue-400">terminal</span>
+                <span class="font-medium text-sm font-mono">anyGem Artifact Viewer</span>
+            </div>
+            <div class="flex items-center gap-3">
+                <button onclick="refreshPreview()" class="text-gray-400 hover:text-white transition-colors" title="重新整理">
+                    <span class="material-symbols-rounded text-[20px]">refresh</span>
+                </button>
+                <button onclick="closePreview()" class="text-gray-400 hover:text-red-400 transition-colors bg-[#333] hover:bg-red-500/20 rounded-full p-1" title="關閉">
+                    <span class="material-symbols-rounded text-[20px]">close</span>
+                </button>
+            </div>
+        </div>
+        <div class="flex-1 bg-white relative w-full h-full">
+            <iframe id="preview-iframe" sandbox="allow-scripts allow-forms allow-modals" class="w-full h-full border-none absolute inset-0"></iframe>
+        </div>
+    </div>
+
     <aside id="sidebar" class="w-72 bg-[#1e1f22] border-r border-[#333] flex flex-col transition-all duration-300 z-20 absolute md:relative h-full -translate-x-full md:translate-x-0">
         <div class="p-4 flex items-center justify-between">
             <h1 class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">anyGem Agent</h1>
@@ -63,7 +83,7 @@
                 </div>
                 <div class="flex-1 pt-2">
                     <h2 class="text-2xl font-semibold mb-2 text-white">您好！我是 anyGem 代理人。</h2>
-                    <p class="text-gray-400 mb-4">我可以幫您建立文件、規劃行事曆、讀取資料庫，甚至解析 PDF 報告與繪圖。請問今天需要什麼協助？</p>
+                    <p class="text-gray-400 mb-4">我可以幫您建立文件、規劃行事曆、讀取資料庫，甚至解析 PDF 報告與直接渲染網頁應用程式。請問今天需要什麼協助？</p>
                 </div>
             </div>
         </div>
@@ -99,7 +119,7 @@
                     </button>
                 </div>
             </div>
-            <div class="text-center mt-2 text-xs text-gray-500 font-mono">Powered by anyGem Edge Engine v62.1 (Function Calling Enabled)</div>
+            <div class="text-center mt-2 text-xs text-gray-500 font-mono">Powered by anyGem Edge Engine v62.2 (Artifacts & Function Calling Enabled)</div>
         </div>
     </main>
 
@@ -116,22 +136,21 @@
         let currentDocumentText = null;
         let currentDocumentName = null;
         let isWaiting = false;
+        let currentRenderCode = "";
 
         // ==========================================
-        // UI 控制器 (UI Controller)
+        // UI 控制器與事件監聽 (UI Controller)
         // ==========================================
         const chatContainer = document.getElementById('chat-container');
         const userInput = document.getElementById('user-input');
         const sendBtn = document.getElementById('send-btn');
         const sessionList = document.getElementById('session-list');
 
-        // 自動調整 Textarea 高度
         userInput.addEventListener('input', function() {
             this.style.height = 'auto';
             this.style.height = (this.scrollHeight < 192 ? this.scrollHeight : 192) + 'px';
         });
 
-        // 支援 Enter 發送 (Shift+Enter 換行)
         userInput.addEventListener('keydown', function(e) {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
@@ -140,7 +159,7 @@
         });
 
         // ==========================================
-        // 🚀 全新多模態處理器 (圖片 & 文件邊緣解析)
+        // 🚀 多模態處理器 (圖片 & 文件邊緣解析)
         // ==========================================
         async function handleFileUpload(event) {
             const file = event.target.files[0];
@@ -149,7 +168,6 @@
             const fileType = file.type;
             const fileName = file.name;
 
-            // 1. 處理圖片 (Image)
             if (fileType.startsWith('image/')) {
                 const reader = new FileReader();
                 reader.onload = (e) => {
@@ -162,7 +180,6 @@
                 };
                 reader.readAsDataURL(file);
             } 
-            // 2. 處理 PDF (Edge Parsing)
             else if (fileType === 'application/pdf') {
                 document.getElementById('user-input').placeholder = "正在解析 PDF，請稍候...";
                 const reader = new FileReader();
@@ -181,7 +198,6 @@
                 };
                 reader.readAsArrayBuffer(file);
             }
-            // 3. 處理純文字 (TXT, CSV, MD)
             else if (fileType.startsWith('text/') || fileName.endsWith('.md') || fileName.endsWith('.csv') || fileName.endsWith('.json')) {
                 const reader = new FileReader();
                 reader.onload = (e) => setDocumentPayload(fileName, e.target.result);
@@ -190,7 +206,7 @@
             else {
                 alert("抱歉，目前僅支援圖片、PDF 與純文字檔案。");
             }
-            event.target.value = ''; // Reset input
+            event.target.value = ''; 
         }
 
         function setDocumentPayload(name, text) {
@@ -213,37 +229,65 @@
         }
 
         // ==========================================
-        // 核心 API 通訊邏輯
+        // 程式碼沙盒渲染控制 (Artifacts Engine)
+        // ==========================================
+        function openPreview(code) {
+            currentRenderCode = code;
+            const modal = document.getElementById('preview-modal');
+            const iframe = document.getElementById('preview-iframe');
+            
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            document.body.style.overflow = 'hidden'; 
+            
+            // 安全注入 HTML
+            iframe.srcdoc = currentRenderCode;
+        }
+
+        function closePreview() {
+            const modal = document.getElementById('preview-modal');
+            const iframe = document.getElementById('preview-iframe');
+            
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            document.body.style.overflow = ''; 
+            
+            iframe.srcdoc = ''; 
+            currentRenderCode = "";
+        }
+
+        function refreshPreview() {
+            const iframe = document.getElementById('preview-iframe');
+            iframe.srcdoc = currentRenderCode;
+        }
+
+        // ==========================================
+        // API 通訊邏輯
         // ==========================================
         async function sendMessage() {
             const text = userInput.value.trim();
             if (!text && !currentImageData && !currentDocumentText) return;
 
-            // 1. 畫面呈現 User 訊息
             let displayUserText = text;
             if (currentDocumentName) displayUserText = `📎 [上傳了文件: ${currentDocumentName}]\n${text}`;
             appendMessage('user', displayUserText, currentImageData);
             
-            // 2. 💡 魔法注入：把解析出來的文件內容，塞給後台的 payload
             let payloadText = text || "請總結這份文件或圖片";
             if (currentDocumentText) {
                 payloadText = `【系統提示：使用者上傳了文件「${currentDocumentName}」】\n---\n${currentDocumentText}\n---\n\n使用者指令：${payloadText}`;
             }
 
-            // 清空輸入狀態
             userInput.value = '';
             userInput.style.height = 'auto';
             const payloadImage = currentImageData;
             const payloadMime = currentMimeType;
             clearUpload();
             
-            // 3. 顯示 AI 思考中狀態
             isWaiting = true;
             sendBtn.disabled = true;
             const loadingId = appendLoading();
             scrollToBottom();
 
-            // 4. 呼叫 GAS 後台
             try {
                 const response = await fetch(GAS_URL, {
                     method: 'POST',
@@ -260,9 +304,8 @@
                 
                 if (data.status === "error") throw new Error(data.error);
                 
-                // 5. 畫面呈現 AI 訊息
                 appendMessage('ai', data.reply, data.image ? `data:${data.mime};base64,${data.image}` : null, data.model);
-                loadSessions(); // 刷新側邊欄歷史紀錄
+                loadSessions(); 
 
             } catch (err) {
                 removeLoading(loadingId);
@@ -275,37 +318,53 @@
         }
 
         // ==========================================
-        // DOM 操作輔助函數
+        // DOM 操作輔助函數 (含 Artifacts 攔截器)
         // ==========================================
         function appendMessage(role, text, imageSrc = null, modelInfo = null) {
             const isUser = role === 'user';
             const div = document.createElement('div');
             div.className = `flex gap-4 max-w-4xl mx-auto w-full ${isUser ? 'flex-row-reverse' : ''}`;
             
-            // 頭像
             const avatar = isUser 
                 ? `<div class="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center flex-shrink-0"><span class="material-symbols-rounded text-sm">person</span></div>`
                 : `<div class="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0"><span class="material-symbols-rounded text-sm text-white">smart_toy</span></div>`;
             
-            // 內容區塊
             let contentHtml = '';
             if (imageSrc) contentHtml += `<img src="${imageSrc}" class="max-w-xs md:max-w-md rounded-xl border border-[#444] mb-3 shadow-lg">`;
             
-            // 使用 marked.js 解析 Markdown (確保安全渲染)
             if (text) contentHtml += `<div class="prose prose-invert max-w-none text-[15px] leading-relaxed">${isUser ? text.replace(/\n/g, '<br>') : marked.parse(text)}</div>`;
             
-            // 工具執行標籤
             if (!isUser && modelInfo && modelInfo === 'Agent-Executor') {
                 contentHtml += `<div class="mt-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-900/30 text-blue-400 border border-blue-900/50 text-xs font-medium"><span class="material-symbols-rounded text-[14px]">build</span>由 Agent Tools 自動執行</div>`;
             }
 
             div.innerHTML = `
                 ${avatar}
-                <div class="${isUser ? 'bg-[#2a2b2f] border border-[#333] px-5 py-3.5 rounded-2xl rounded-tr-sm' : 'pt-1'} max-w-[85%] text-gray-100 overflow-hidden">
+                <div class="${isUser ? 'bg-[#2a2b2f] border border-[#333] px-5 py-3.5 rounded-2xl rounded-tr-sm' : 'pt-1'} max-w-[85%] text-gray-100 overflow-hidden relative">
                     ${contentHtml}
                 </div>
             `;
             chatContainer.appendChild(div);
+
+            // 🌟 攔截並注入 Artifacts 渲染按鈕
+            if (!isUser) {
+                const htmlCodeBlocks = div.querySelectorAll('pre code.language-html');
+                htmlCodeBlocks.forEach(block => {
+                    const preElement = block.parentElement;
+                    preElement.style.position = 'relative'; 
+                    
+                    const previewBtn = document.createElement('button');
+                    previewBtn.innerHTML = '<span class="material-symbols-rounded text-[16px]">play_arrow</span> 渲染預覽';
+                    previewBtn.className = 'absolute top-2 right-2 bg-blue-600/80 hover:bg-blue-500 text-white text-xs px-2.5 py-1.5 rounded flex items-center gap-1 transition-colors backdrop-blur-md shadow-lg border border-blue-400/30 z-10';
+                    
+                    previewBtn.onclick = () => {
+                        const codeContent = block.innerText;
+                        openPreview(codeContent);
+                    };
+                    preElement.appendChild(previewBtn);
+                });
+            }
+
             scrollToBottom();
         }
 
@@ -387,10 +446,7 @@
             } catch(e) { console.error("無法讀取歷史:", e); }
         }
 
-        // 初始化載入
-        window.onload = () => {
-            loadSessions();
-        };
+        window.onload = () => { loadSessions(); };
     </script>
 </body>
 </html>
