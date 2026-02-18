@@ -4,80 +4,107 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>anyGem v61.0 : Super Agent & Artifacts</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
-        body { font-family: 'Inter', sans-serif; background: #020617; color: #cbd5e1; }
-        @keyframes fadeInUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-fade-in { animation: fadeInUp 0.4s ease-out forwards; }
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-thumb { background: #10b981; border-radius: 10px; }
-        .sidebar-transition { transition: transform 0.3s ease-in-out; }
-        .glass { background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
-        
-        /* Agent 工具箱與成品預覽樣式 */
-        .agent-action-box {
-            background: rgba(16, 185, 129, 0.05);
-            border-left: 3px solid #34d399;
-            padding: 12px;
-            margin-bottom: 12px;
-            border-radius: 0 8px 8px 0;
+    
+    <script src="[https://cdn.tailwindcss.com](https://cdn.tailwindcss.com)"></script>
+    <script src="[https://cdn.jsdelivr.net/npm/marked/marked.min.js](https://cdn.jsdelivr.net/npm/marked/marked.min.js)"></script>
+    <link href="[https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css](https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css)" rel="stylesheet">
+    <link href="[https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap](https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap)" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: { background: '#020617' }
+                }
+            }
         }
-        .artifact-container {
-            margin-top: 1rem;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            overflow: hidden;
-            background: #ffffff;
+    </script>
+
+    <style type="text/tailwindcss">
+        @layer base {
+            body { @apply font-sans bg-background text-slate-300 antialiased overflow-hidden; }
+            ::-webkit-scrollbar { @apply w-1.5; }
+            ::-webkit-scrollbar-thumb { @apply bg-emerald-500 rounded-full; }
+            ::-webkit-scrollbar-track { @apply bg-transparent; }
         }
-        .artifact-header {
-            background: #1e293b;
-            padding: 8px 12px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            color: #34d399;
-            font-size: 10px;
-            font-weight: 800;
-            text-transform: uppercase;
+
+        @layer components {
+            /* 共用面板與按鈕 */
+            .glass-panel { @apply bg-slate-900/90 backdrop-blur-xl border-b border-white/5 shadow-xl; }
+            .btn-primary { @apply w-full md:w-auto bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-4 rounded-xl font-black uppercase tracking-wide active:scale-95 transition-all shadow-lg flex items-center justify-center gap-2; }
+            .btn-icon { @apply bg-slate-800 p-4 rounded-xl hover:bg-emerald-600/20 active:scale-90 transition-all border border-white/5 text-emerald-400 focus:outline-none; }
+            .input-box { @apply w-full bg-slate-800 rounded-xl px-5 py-4 text-white text-sm outline-none focus:ring-1 focus:ring-emerald-500/50 resize-none border border-white/5; }
+
+            /* 頂部導航列 */
+            .header-bar { @apply sticky top-0 z-40 p-4 glass-panel; }
+            .logo-text { @apply text-xl font-black text-white italic tracking-tighter uppercase flex items-baseline gap-1; }
+            .logo-version { @apply text-emerald-500 text-xs font-bold not-italic tracking-normal bg-emerald-500/10 px-2 py-0.5 rounded-md; }
+            .btn-ghost { @apply text-slate-400 hover:text-white p-2 hover:bg-white/5 rounded-xl transition-colors active:scale-95 focus:outline-none; }
+            
+            /* 客製化下拉選單 */
+            .select-wrapper { @apply relative w-full md:w-auto; }
+            .select-wrapper::after {
+                content: '\f0d7'; font-family: 'Font Awesome 6 Free'; font-weight: 900;
+                @apply absolute right-4 top-1/2 -translate-y-1/2 text-emerald-500 pointer-events-none text-sm transition-transform;
+            }
+            .select-wrapper:focus-within::after { @apply transform rotate-180; }
+            .select-mode { @apply w-full md:w-auto bg-slate-800/80 hover:bg-slate-700/80 text-white text-xs py-3 pl-4 pr-10 rounded-xl border border-white/10 focus:border-emerald-500/50 font-bold outline-none cursor-pointer transition-all appearance-none shadow-inner; }
+            .select-mode option { @apply bg-slate-800 text-white font-sans; }
+
+            /* 側邊欄與選單 */
+            .sidebar { @apply fixed inset-y-0 left-0 z-50 w-64 bg-[#0f172a] border-r border-white/5 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out flex flex-col shadow-2xl; }
+            .sidebar-overlay { @apply fixed inset-0 bg-black/60 z-40 hidden md:hidden backdrop-blur-sm transition-opacity; }
+            .history-item { @apply p-3 rounded-xl text-xs flex justify-between items-center cursor-pointer mb-1 text-slate-400 hover:bg-white/5 transition-colors group; }
+            .history-item.active { @apply bg-emerald-500/10 text-emerald-400 font-bold; }
+            .history-delete { @apply opacity-0 group-hover:opacity-100 hover:text-red-400 transition-opacity p-1 focus:outline-none; }
+
+            /* 對話與 Agent 組件 */
+            .chat-bubble { @apply max-w-[90%] md:max-w-[85%] p-4 rounded-2xl shadow-xl transition-all; }
+            .chat-user { @apply chat-bubble bg-emerald-600 text-white rounded-tr-none; }
+            .chat-ai { @apply chat-bubble bg-slate-800 text-slate-200 border border-emerald-500/10 rounded-tl-none; }
+            .agent-action-box { @apply bg-emerald-500/10 border-l-4 border-emerald-400 p-3 mb-3 rounded-r-lg; }
+            .artifact-container { @apply mt-4 border border-white/10 rounded-xl overflow-hidden bg-white; }
+            .artifact-header { @apply bg-slate-800 px-3 py-2 flex justify-between items-center text-emerald-400 text-[10px] font-black tracking-widest uppercase; }
         }
-        iframe.artifact-frame {
-            width: 100%;
-            min-height: 300px;
-            border: none;
-            background: white;
+
+        @layer utilities {
+            .animate-fade-in { animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+            @keyframes fadeInUp { 
+                from { opacity: 0; transform: translate3d(0, 12px, 0); } 
+                to { opacity: 1; transform: translate3d(0, 0, 0); } 
+            }
         }
     </style>
 </head>
-<body class="h-screen flex overflow-hidden">
+<body>
 
-    <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-[#0f172a] border-r border-emerald-900/30 transform -translate-x-full md:translate-x-0 sidebar-transition flex flex-col shadow-2xl">
+    <aside id="sidebar" class="sidebar">
         <div class="p-4 border-b border-white/5">
-            <button onclick="newChat()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg active:scale-95">
+            <button onclick="newChat()" class="btn-primary">
                 <i class="fas fa-plus"></i> 新增對話
             </button>
         </div>
-        <div class="flex-grow overflow-y-auto p-3 space-y-2" id="history-list"></div>
-        <div class="p-4 border-t border-white/5 text-[10px] text-center text-slate-500 font-mono tracking-widest">
+        <div class="flex-grow overflow-y-auto p-3" id="history-list"></div>
+        <div class="p-4 border-t border-white/5 text-[10px] text-center text-slate-500 font-mono tracking-widest uppercase">
             anyGem v61.0 ARTIFACTS
         </div>
     </aside>
 
-    <div id="sidebar-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black/50 z-40 hidden md:hidden glass"></div>
+    <div id="sidebar-overlay" onclick="toggleSidebar()" class="sidebar-overlay"></div>
 
     <div class="flex-1 flex flex-col h-full relative md:ml-64 transition-all w-full">
         
-        <header class="p-4 glass sticky top-0 z-40 shadow-xl">
-            <div class="max-w-4xl mx-auto flex flex-col md:flex-row justify-between items-center gap-2">
+        <header class="header-bar">
+            <div class="max-w-4xl mx-auto flex flex-col md:flex-row justify-between items-center gap-3 w-full">
                 <div class="flex items-center gap-3 w-full md:w-auto">
-                    <button onclick="toggleSidebar()" class="md:hidden text-white p-2 hover:bg-white/10 rounded-lg"><i class="fas fa-bars text-xl"></i></button>
-                    <span class="text-xl font-black text-white italic tracking-tighter uppercase">anyGem <span class="text-emerald-500 text-sm">v61</span></span>
+                    <button onclick="toggleSidebar()" class="md:hidden btn-ghost"><i class="fas fa-bars text-xl"></i></button>
+                    <span class="logo-text">anyGem <span class="logo-version">v61</span></span>
                 </div>
-                <div class="w-full md:w-auto">
-                    <select id="mode-select" onchange="updateUI()" class="w-full md:w-auto bg-emerald-900/40 text-white text-xs py-3 px-4 rounded-xl border border-emerald-500/50 font-bold outline-none cursor-pointer">
+                <div class="select-wrapper">
+                    <select id="mode-select" onchange="updateUI()" class="select-mode">
                         <option value="chat" selected>🧠 AI Agent (Code & Tool)</option>
+                        <option value="presentation">📊 智能簡報 (PPT Mode)</option>
                         <option value="drawing">🎨 藝術生圖 (Art Mode)</option>
                     </select>
                 </div>
@@ -86,31 +113,31 @@
 
         <main id="chat-window" class="flex-grow p-4 overflow-y-auto space-y-6 scroll-smooth pb-32 max-w-4xl mx-auto w-full"></main>
 
-        <div id="file-preview-bar" class="hidden absolute bottom-24 left-4 right-4 md:left-auto md:right-auto md:w-full md:max-w-4xl md:mx-auto px-4 py-2 glass rounded-2xl border border-emerald-500/30 animate-fade-in flex items-center justify-between z-20 self-center">
+        <div id="file-preview-bar" class="hidden absolute bottom-24 left-4 right-4 md:left-auto md:right-auto md:w-full md:max-w-4xl md:mx-auto px-4 py-2 glass-panel rounded-2xl animate-fade-in flex items-center justify-between z-20 self-center">
             <div class="flex items-center space-x-3">
                 <div id="file-thumb" class="w-10 h-10 rounded-lg bg-slate-800 flex items-center justify-center border border-white/10 overflow-hidden text-emerald-500"></div>
                 <div id="file-name-label" class="text-xs font-bold text-white truncate max-w-[150px]">附件就緒</div>
             </div>
-            <button onclick="clearFile()" class="p-1 bg-white/5 rounded-full text-slate-400 hover:text-red-400">✕</button>
+            <button onclick="clearFile()" class="p-1 text-slate-400 hover:text-red-400 focus:outline-none"><i class="fas fa-times"></i></button>
         </div>
 
-        <footer class="p-4 glass border-t border-emerald-900/30 z-30 absolute bottom-0 w-full">
+        <footer class="p-4 glass-panel z-30 absolute bottom-0 w-full border-t border-white/5">
             <div class="max-w-4xl mx-auto flex gap-2 items-end">
                 <input type="file" id="file-input" class="hidden">
-                <button onclick="document.getElementById('file-input').click()" class="bg-slate-800 p-4 rounded-2xl hover:bg-emerald-600/20 active:scale-90 transition-all border border-white/5">
-                    <i class="fas fa-paperclip text-emerald-400 text-lg"></i>
+                <button onclick="document.getElementById('file-input').click()" class="btn-icon">
+                    <i class="fas fa-paperclip text-lg"></i>
                 </button>
                 <div class="flex-grow">
-                    <textarea id="user-input" rows="1" class="w-full bg-[#1e293b] rounded-2xl px-5 py-4 text-white text-sm outline-none focus:ring-1 focus:ring-emerald-500/50 resize-none border border-white/5" placeholder="輸入問題，或「寫一個番茄鐘網頁」、「畫一個 SVG 動畫」..."></textarea>
+                    <textarea id="user-input" rows="1" class="input-box" placeholder="輸入問題..."></textarea>
                 </div>
-                <button onclick="handleSend()" id="send-btn" class="bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-4 rounded-2xl font-black uppercase active:scale-95 transition-all">Send</button>
+                <button onclick="handleSend()" id="send-btn" class="btn-primary px-8">Send</button>
             </div>
         </footer>
     </div>
 
     <script>
         // ⚠️ 請務必確認此處更換為您部署後端 (GAS) 的 Exec URL
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbwsng4RBCTX67my46U4fv7BhDYT0CIZt95dL7DNCFJTGUJLZFd_854vRGeUsQ1_BjG9/exec"; 
+        const GAS_URL = "[https://script.google.com/macros/s/AKfycbwsng4RBCTX67my46U4fv7BhDYT0CIZt95dL7DNCFJTGUJLZFd_854vRGeUsQ1_BjG9/exec](https://script.google.com/macros/s/AKfycbwsng4RBCTX67my46U4fv7BhDYT0CIZt95dL7DNCFJTGUJLZFd_854vRGeUsQ1_BjG9/exec)"; 
         
         let sessId = localStorage.getItem('ANYGEM_USER_ID') || "UID_" + Math.random().toString(36).substr(2, 9).toUpperCase();
         localStorage.setItem('ANYGEM_USER_ID', sessId);
@@ -119,18 +146,25 @@
         let activeFile = null;
 
         function updateUI() {
-            input.placeholder = modeSelect.value === 'drawing' ? "描述圖片..." : "嘗試：「寫一個 HTML 計算機」、「建立日曆行程」...";
+            if (modeSelect.value === 'drawing') input.placeholder = "描述圖片 (如：賽博龐克風格的城市)...";
+            else if (modeSelect.value === 'presentation') input.placeholder = "輸入簡報主題 (如：AI 發展趨勢)...";
+            else input.placeholder = "嘗試：「寫一個 HTML 計算機」、「幫我把上文轉成文件」或「建立明日行事曆」...";
             input.focus();
         }
 
         async function handleSend() {
             const text = input.value.trim(); if(!text && !activeFile) return;
             addMessage('user', text, { fileName: activeFile?.name });
+            
             const payload = { message: text, session_id: sessId, mode: modeSelect.value };
+            if (modeSelect.value === 'presentation') {
+                payload.options = { theme: 'modern_blue', length: 5, use_ai_image: false };
+            }
+
             const tempFile = activeFile; input.value = ''; clearFile();
 
             if(tempFile) {
-                setLoading(true, "Analyzing Image...");
+                setLoading(true, "Analyzing Data...");
                 const base64 = await toBase64(tempFile);
                 payload.file_data = base64.split(',')[1];
                 payload.mime_type = tempFile.type;
@@ -143,24 +177,23 @@
                     addMessage('ai', data.reply, { model: data.model, image: data.image, mime: data.mime });
                     fetchHistoryList();
                 } else addMessage('ai', "🚨 Error: " + data.error);
-            } catch (e) { addMessage('ai', "❌ 連線失敗"); }
+            } catch (e) { addMessage('ai', "❌ 連線失敗或處理超時"); }
             finally { setLoading(false); }
         }
 
-        // --- 核心：訊息渲染與 Artifacts 處理 ---
         function addMessage(role, text, meta = null) {
             const wrapper = document.createElement('div');
             wrapper.className = `flex ${role === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in mb-6`;
-            const msgBox = document.createElement('div');
-            msgBox.className = `max-w-[90%] md:max-w-[85%] p-4 rounded-2xl shadow-xl ${role === 'user' ? 'bg-emerald-600 text-white rounded-tr-none' : 'bg-[#1e293b] text-slate-200 border border-emerald-500/10 rounded-tl-none'}`;
             
-            if(meta?.fileName) msgBox.innerHTML += `<div class="mb-2 p-2 bg-black/20 rounded-lg text-[10px] flex items-center gap-2"><i class="fas fa-file-image"></i> ${meta.fileName}</div>`;
+            const msgBox = document.createElement('div');
+            msgBox.className = role === 'user' ? 'chat-user' : 'chat-ai';
+            
+            if(meta?.fileName) msgBox.innerHTML += `<div class="mb-2 p-2 bg-black/20 rounded-lg text-[10px] flex items-center gap-2 w-fit"><i class="fas fa-file-image"></i> ${meta.fileName}</div>`;
             if(meta?.image) msgBox.innerHTML += `<img src="data:${meta.mime || 'image/png'};base64,${meta.image}" class="w-full rounded-xl mb-3 shadow-lg">`;
             
             const contentNode = document.createElement('div');
             contentNode.className = "prose prose-invert prose-sm max-w-none leading-relaxed";
 
-            // 處理 Agent Action 樣式
             let displayOutput = text;
             if (meta?.model === "Agent-Executor") {
                 displayOutput = `<div class="agent-action-box"><div class="text-[10px] text-emerald-400 font-bold mb-1 uppercase tracking-tighter"><i class="fas fa-terminal"></i> Task Executed</div>${text}</div>`;
@@ -170,19 +203,21 @@
             }
             msgBox.appendChild(contentNode);
 
-            // --- ✨ Artifacts: 自動預覽 HTML/SVG 代碼 ---
-            const codeBlockRegex = /```(?:html|xml|svg)([\s\S]*?)```/g;
+            // ✨ Artifacts 渲染增強 (含 Tailwind 注入防護)
+            const codeBlockRegex = /```(?:html|xml|svg)\n?([\s\S]*?)```/g;
             let match;
             while ((match = codeBlockRegex.exec(text)) !== null) {
-                const code = match[1].trim();
+                const rawCode = match[1].trim();
+                const safeCode = `<!DOCTYPE html><html><head><script src="https://cdn.tailwindcss.com"><\/script><style>body{margin:0;padding:16px;font-family:sans-serif;}</style></head><body>${rawCode}</body></html>`;
+                
                 const artifactContainer = document.createElement('div');
                 artifactContainer.className = "artifact-container animate-fade-in";
                 artifactContainer.innerHTML = `
                     <div class="artifact-header">
-                        <span><i class="fas fa-play"></i> LIVE PREVIEW</span>
-                        <button onclick="this.parentElement.nextElementSibling.srcdoc=this.parentElement.nextElementSibling.srcdoc" class="hover:text-white"><i class="fas fa-sync-alt"></i></button>
+                        <span><i class="fas fa-layer-group"></i> ARTIFACT RENDERED</span>
+                        <button onclick="this.parentElement.nextElementSibling.srcdoc=this.parentElement.nextElementSibling.getAttribute('data-raw')" class="hover:text-white transition-colors focus:outline-none"><i class="fas fa-sync-alt"></i></button>
                     </div>
-                    <iframe class="artifact-frame" srcdoc='${code.replace(/'/g, "&apos;")}' sandbox="allow-scripts"></iframe>
+                    <iframe class="w-full min-h-[300px] border-none bg-white" srcdoc="${safeCode.replace(/"/g, '&quot;')}" data-raw="${safeCode.replace(/"/g, '&quot;')}" sandbox="allow-scripts allow-same-origin allow-forms"></iframe>
                 `;
                 msgBox.appendChild(artifactContainer);
             }
@@ -192,7 +227,7 @@
             chatWindow.scrollTop = chatWindow.scrollHeight;
         }
 
-        // 輔助函式 (檔案、歷史、側欄)
+        // --- 輔助函式 ---
         function clearFile() { activeFile = null; previewBar.classList.add('hidden'); updateUI(); }
         document.getElementById('file-input').onchange = (e) => {
             activeFile = e.target.files[0]; if(!activeFile) return;
@@ -204,28 +239,38 @@
         function toBase64(f) { return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(f); }); }
         function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); document.getElementById('sidebar-overlay').classList.toggle('hidden'); }
         function newChat() { sessId = "UID_" + Date.now(); localStorage.setItem('ANYGEM_USER_ID', sessId); chatWindow.innerHTML = ''; fetchHistoryList(); if(window.innerWidth < 768) toggleSidebar(); }
+        
         async function fetchHistoryList() { 
             try {
                 const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ mode: 'system', action: 'get_session_list' }) });
                 const d = await res.json(); const l = document.getElementById('history-list'); l.innerHTML = '';
                 d.sessions.forEach(s => {
                     const el = document.createElement('div');
-                    el.className = `p-3 rounded-xl text-xs flex justify-between cursor-pointer mb-1 ${s.id === sessId ? 'bg-emerald-900/30 text-emerald-400' : 'text-slate-400 hover:bg-white/5'}`;
-                    el.innerHTML = `<span onclick="loadSession('${s.id}')" class="truncate flex-1">${s.title}</span><i onclick="deleteChat('${s.id}')" class="fas fa-trash-alt ml-2 opacity-50 hover:text-red-400"></i>`;
+                    el.className = `history-item ${s.id === sessId ? 'active' : ''}`;
+                    el.innerHTML = `<span onclick="loadSession('${s.id}')" class="truncate flex-1">${s.title}</span><button onclick="deleteChat('${s.id}')" class="history-delete" title="刪除"><i class="fas fa-trash-alt"></i></button>`;
                     l.appendChild(el);
                 });
             } catch(e){}
         }
+        
         async function loadSession(id) { 
             sessId = id; localStorage.setItem('ANYGEM_USER_ID', id);
-            chatWindow.innerHTML = '<div class="text-center p-10 animate-pulse"><i class="fas fa-spinner fa-spin text-emerald-500"></i></div>';
+            chatWindow.innerHTML = '<div class="text-center p-10 animate-pulse"><i class="fas fa-spinner fa-spin text-emerald-500 text-2xl"></i></div>';
             const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ mode: 'system', action: 'load_session', session_id: id }) });
             const data = await res.json(); chatWindow.innerHTML='';
             data.logs.forEach(l => addMessage(l.role === 'model' ? 'ai' : 'user', l.text));
             if(window.innerWidth < 768) toggleSidebar();
         }
-        async function deleteChat(id) { if(confirm("確定刪除？")) { await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ mode: 'system', action: 'delete_session', session_id: id }) }); if(id===sessId) newChat(); else fetchHistoryList(); } }
-        function setLoading(l, t) { btn.disabled = l; if(l) { const d = document.createElement('div'); d.id = 'loader'; d.className = 'text-center p-4 text-emerald-500 text-[10px] font-bold animate-pulse'; d.innerHTML = `<i class="fas fa-bolt"></i> ${t.toUpperCase()}`; chatWindow.appendChild(d); chatWindow.scrollTop = chatWindow.scrollHeight; } else document.getElementById('loader')?.remove(); }
+        
+        async function deleteChat(id) { if(confirm("確定刪除此對話？")) { await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ mode: 'system', action: 'delete_session', session_id: id }) }); if(id===sessId) newChat(); else fetchHistoryList(); } }
+        
+        function setLoading(l, t) { 
+            btn.disabled = l; 
+            if(l) { 
+                const d = document.createElement('div'); d.id = 'loader'; d.className = 'text-center p-4 text-emerald-500 text-[10px] font-bold animate-pulse uppercase tracking-widest'; d.innerHTML = `<i class="fas fa-bolt"></i> ${t}`; 
+                chatWindow.appendChild(d); chatWindow.scrollTop = chatWindow.scrollHeight; 
+            } else document.getElementById('loader')?.remove(); 
+        }
         
         updateUI(); fetchHistoryList();
         input.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } });
