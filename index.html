@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>anyGem v61.0 : Super Agent & Artifacts</title>
     
-    <script src="[https://cdn.tailwindcss.com](https://cdn.tailwindcss.com)"></script>
-    <script src="[https://cdn.jsdelivr.net/npm/marked/marked.min.js](https://cdn.jsdelivr.net/npm/marked/marked.min.js)"></script>
-    <link href="[https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css](https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css)" rel="stylesheet">
-    <link href="[https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap](https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap)" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
 
     <script>
         tailwind.config = {
@@ -21,67 +21,23 @@
         }
     </script>
 
-    <style type="text/tailwindcss">
-        @layer base {
-            body { @apply font-sans bg-background text-slate-300 antialiased overflow-hidden; }
-            ::-webkit-scrollbar { @apply w-1.5; }
-            ::-webkit-scrollbar-thumb { @apply bg-emerald-500 rounded-full; }
-            ::-webkit-scrollbar-track { @apply bg-transparent; }
-        }
-
-        @layer components {
-            /* 共用面板與按鈕 */
-            .glass-panel { @apply bg-slate-900/90 backdrop-blur-xl border-b border-white/5 shadow-xl; }
-            .btn-primary { @apply w-full md:w-auto bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-4 rounded-xl font-black uppercase tracking-wide active:scale-95 transition-all shadow-lg flex items-center justify-center gap-2; }
-            .btn-icon { @apply bg-slate-800 p-4 rounded-xl hover:bg-emerald-600/20 active:scale-90 transition-all border border-white/5 text-emerald-400 focus:outline-none; }
-            .input-box { @apply w-full bg-slate-800 rounded-xl px-5 py-4 text-white text-sm outline-none focus:ring-1 focus:ring-emerald-500/50 resize-none border border-white/5; }
-
-            /* 頂部導航列 */
-            .header-bar { @apply sticky top-0 z-40 p-4 glass-panel; }
-            .logo-text { @apply text-xl font-black text-white italic tracking-tighter uppercase flex items-baseline gap-1; }
-            .logo-version { @apply text-emerald-500 text-xs font-bold not-italic tracking-normal bg-emerald-500/10 px-2 py-0.5 rounded-md; }
-            .btn-ghost { @apply text-slate-400 hover:text-white p-2 hover:bg-white/5 rounded-xl transition-colors active:scale-95 focus:outline-none; }
-            
-            /* 客製化下拉選單 */
-            .select-wrapper { @apply relative w-full md:w-auto; }
-            .select-wrapper::after {
-                content: '\f0d7'; font-family: 'Font Awesome 6 Free'; font-weight: 900;
-                @apply absolute right-4 top-1/2 -translate-y-1/2 text-emerald-500 pointer-events-none text-sm transition-transform;
-            }
-            .select-wrapper:focus-within::after { @apply transform rotate-180; }
-            .select-mode { @apply w-full md:w-auto bg-slate-800/80 hover:bg-slate-700/80 text-white text-xs py-3 pl-4 pr-10 rounded-xl border border-white/10 focus:border-emerald-500/50 font-bold outline-none cursor-pointer transition-all appearance-none shadow-inner; }
-            .select-mode option { @apply bg-slate-800 text-white font-sans; }
-
-            /* 側邊欄與選單 */
-            .sidebar { @apply fixed inset-y-0 left-0 z-50 w-64 bg-[#0f172a] border-r border-white/5 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out flex flex-col shadow-2xl; }
-            .sidebar-overlay { @apply fixed inset-0 bg-black/60 z-40 hidden md:hidden backdrop-blur-sm transition-opacity; }
-            .history-item { @apply p-3 rounded-xl text-xs flex justify-between items-center cursor-pointer mb-1 text-slate-400 hover:bg-white/5 transition-colors group; }
-            .history-item.active { @apply bg-emerald-500/10 text-emerald-400 font-bold; }
-            .history-delete { @apply opacity-0 group-hover:opacity-100 hover:text-red-400 transition-opacity p-1 focus:outline-none; }
-
-            /* 對話與 Agent 組件 */
-            .chat-bubble { @apply max-w-[90%] md:max-w-[85%] p-4 rounded-2xl shadow-xl transition-all; }
-            .chat-user { @apply chat-bubble bg-emerald-600 text-white rounded-tr-none; }
-            .chat-ai { @apply chat-bubble bg-slate-800 text-slate-200 border border-emerald-500/10 rounded-tl-none; }
-            .agent-action-box { @apply bg-emerald-500/10 border-l-4 border-emerald-400 p-3 mb-3 rounded-r-lg; }
-            .artifact-container { @apply mt-4 border border-white/10 rounded-xl overflow-hidden bg-white; }
-            .artifact-header { @apply bg-slate-800 px-3 py-2 flex justify-between items-center text-emerald-400 text-[10px] font-black tracking-widest uppercase; }
-        }
-
-        @layer utilities {
-            .animate-fade-in { animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-            @keyframes fadeInUp { 
-                from { opacity: 0; transform: translate3d(0, 12px, 0); } 
-                to { opacity: 1; transform: translate3d(0, 0, 0); } 
-            }
+    <style>
+        body { background-color: #020617; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background-color: #10b981; border-radius: 9999px; }
+        ::-webkit-scrollbar-track { background-color: transparent; }
+        .animate-fade-in { animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        @keyframes fadeInUp { 
+            from { opacity: 0; transform: translate3d(0, 12px, 0); } 
+            to { opacity: 1; transform: translate3d(0, 0, 0); } 
         }
     </style>
 </head>
-<body>
+<body class="font-sans text-slate-300 antialiased overflow-hidden flex h-screen">
 
-    <aside id="sidebar" class="sidebar">
+    <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-[#0f172a] border-r border-white/5 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out flex flex-col shadow-2xl">
         <div class="p-4 border-b border-white/5">
-            <button onclick="newChat()" class="btn-primary">
+            <button onclick="newChat()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-4 rounded-xl font-black uppercase tracking-wide active:scale-95 transition-all shadow-lg flex items-center justify-center gap-2">
                 <i class="fas fa-plus"></i> 新增對話
             </button>
         </div>
@@ -91,29 +47,32 @@
         </div>
     </aside>
 
-    <div id="sidebar-overlay" onclick="toggleSidebar()" class="sidebar-overlay"></div>
+    <div id="sidebar-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black/60 z-40 hidden md:hidden backdrop-blur-sm transition-opacity"></div>
 
     <div class="flex-1 flex flex-col h-full relative md:ml-64 transition-all w-full">
         
-        <header class="header-bar">
+        <header class="sticky top-0 z-40 p-4 bg-slate-900/90 backdrop-blur-xl border-b border-white/5 shadow-xl">
             <div class="max-w-4xl mx-auto flex flex-col md:flex-row justify-between items-center gap-3 w-full">
                 <div class="flex items-center gap-3 w-full md:w-auto">
-                    <button onclick="toggleSidebar()" class="md:hidden btn-ghost"><i class="fas fa-bars text-xl"></i></button>
-                    <span class="logo-text">anyGem <span class="logo-version">v61</span></span>
+                    <button onclick="toggleSidebar()" class="md:hidden text-slate-400 hover:text-white p-2 hover:bg-white/5 rounded-xl transition-colors active:scale-95 focus:outline-none"><i class="fas fa-bars text-xl"></i></button>
+                    <span class="text-xl font-black text-white italic tracking-tighter uppercase flex items-baseline gap-1">
+                        anyGem <span class="text-emerald-500 text-xs font-bold not-italic tracking-normal bg-emerald-500/10 px-2 py-0.5 rounded-md">v61</span>
+                    </span>
                 </div>
-                <div class="select-wrapper">
-                    <select id="mode-select" onchange="updateUI()" class="select-mode">
-                        <option value="chat" selected>🧠 AI Agent (Code & Tool)</option>
-                        <option value="presentation">📊 智能簡報 (PPT Mode)</option>
-                        <option value="drawing">🎨 藝術生圖 (Art Mode)</option>
+                <div class="relative w-full md:w-auto">
+                    <select id="mode-select" onchange="updateUI()" class="appearance-none w-full md:w-auto bg-slate-800/80 hover:bg-slate-700/80 text-white text-xs py-3 pl-4 pr-10 rounded-xl border border-white/10 focus:border-emerald-500/50 font-bold outline-none cursor-pointer transition-all shadow-inner">
+                        <option value="chat" class="bg-slate-800 text-white" selected>🧠 AI Agent (Code & Tool)</option>
+                        <option value="presentation" class="bg-slate-800 text-white">📊 智能簡報 (PPT Mode)</option>
+                        <option value="drawing" class="bg-slate-800 text-white">🎨 藝術生圖 (Art Mode)</option>
                     </select>
+                    <i class="fas fa-caret-down absolute right-4 top-1/2 -translate-y-1/2 text-emerald-500 pointer-events-none transition-transform"></i>
                 </div>
             </div>
         </header>
 
         <main id="chat-window" class="flex-grow p-4 overflow-y-auto space-y-6 scroll-smooth pb-32 max-w-4xl mx-auto w-full"></main>
 
-        <div id="file-preview-bar" class="hidden absolute bottom-24 left-4 right-4 md:left-auto md:right-auto md:w-full md:max-w-4xl md:mx-auto px-4 py-2 glass-panel rounded-2xl animate-fade-in flex items-center justify-between z-20 self-center">
+        <div id="file-preview-bar" class="hidden absolute bottom-24 left-4 right-4 md:left-auto md:right-auto md:w-full md:max-w-4xl md:mx-auto px-4 py-2 bg-slate-900/90 backdrop-blur-xl border border-emerald-500/30 rounded-2xl animate-fade-in flex items-center justify-between z-20 self-center shadow-xl">
             <div class="flex items-center space-x-3">
                 <div id="file-thumb" class="w-10 h-10 rounded-lg bg-slate-800 flex items-center justify-center border border-white/10 overflow-hidden text-emerald-500"></div>
                 <div id="file-name-label" class="text-xs font-bold text-white truncate max-w-[150px]">附件就緒</div>
@@ -121,23 +80,23 @@
             <button onclick="clearFile()" class="p-1 text-slate-400 hover:text-red-400 focus:outline-none"><i class="fas fa-times"></i></button>
         </div>
 
-        <footer class="p-4 glass-panel z-30 absolute bottom-0 w-full border-t border-white/5">
+        <footer class="p-4 bg-slate-900/90 backdrop-blur-xl z-30 absolute bottom-0 w-full border-t border-white/5 shadow-xl">
             <div class="max-w-4xl mx-auto flex gap-2 items-end">
                 <input type="file" id="file-input" class="hidden">
-                <button onclick="document.getElementById('file-input').click()" class="btn-icon">
+                <button onclick="document.getElementById('file-input').click()" class="bg-slate-800 p-4 rounded-xl hover:bg-emerald-600/20 active:scale-90 transition-all border border-white/5 text-emerald-400 focus:outline-none">
                     <i class="fas fa-paperclip text-lg"></i>
                 </button>
                 <div class="flex-grow">
-                    <textarea id="user-input" rows="1" class="input-box" placeholder="輸入問題..."></textarea>
+                    <textarea id="user-input" rows="1" class="w-full bg-slate-800 rounded-xl px-5 py-4 text-white text-sm outline-none focus:ring-1 focus:ring-emerald-500/50 resize-none border border-white/5" placeholder="輸入問題..."></textarea>
                 </div>
-                <button onclick="handleSend()" id="send-btn" class="btn-primary px-8">Send</button>
+                <button onclick="handleSend()" id="send-btn" class="w-full md:w-auto bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-4 rounded-xl font-black uppercase tracking-wide active:scale-95 transition-all shadow-lg flex items-center justify-center">Send</button>
             </div>
         </footer>
     </div>
 
     <script>
-        // ⚠️ 請務必確認此處更換為您部署後端 (GAS) 的 Exec URL
-        const GAS_URL = "[https://script.google.com/macros/s/AKfycbwsng4RBCTX67my46U4fv7BhDYT0CIZt95dL7DNCFJTGUJLZFd_854vRGeUsQ1_BjG9/exec](https://script.google.com/macros/s/AKfycbwsng4RBCTX67my46U4fv7BhDYT0CIZt95dL7DNCFJTGUJLZFd_854vRGeUsQ1_BjG9/exec)"; 
+        // ⚠️ 請確認 GAS_URL
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbwsng4RBCTX67my46U4fv7BhDYT0CIZt95dL7DNCFJTGUJLZFd_854vRGeUsQ1_BjG9/exec"; 
         
         let sessId = localStorage.getItem('ANYGEM_USER_ID') || "UID_" + Math.random().toString(36).substr(2, 9).toUpperCase();
         localStorage.setItem('ANYGEM_USER_ID', sessId);
@@ -186,7 +145,10 @@
             wrapper.className = `flex ${role === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in mb-6`;
             
             const msgBox = document.createElement('div');
-            msgBox.className = role === 'user' ? 'chat-user' : 'chat-ai';
+            // 💡 恢復 Inline Classes
+            msgBox.className = role === 'user' 
+                ? 'max-w-[90%] md:max-w-[85%] p-4 rounded-2xl shadow-xl transition-all bg-emerald-600 text-white rounded-tr-none' 
+                : 'max-w-[90%] md:max-w-[85%] p-4 rounded-2xl shadow-xl transition-all bg-slate-800 text-slate-200 border border-emerald-500/10 rounded-tl-none';
             
             if(meta?.fileName) msgBox.innerHTML += `<div class="mb-2 p-2 bg-black/20 rounded-lg text-[10px] flex items-center gap-2 w-fit"><i class="fas fa-file-image"></i> ${meta.fileName}</div>`;
             if(meta?.image) msgBox.innerHTML += `<img src="data:${meta.mime || 'image/png'};base64,${meta.image}" class="w-full rounded-xl mb-3 shadow-lg">`;
@@ -196,14 +158,14 @@
 
             let displayOutput = text;
             if (meta?.model === "Agent-Executor") {
-                displayOutput = `<div class="agent-action-box"><div class="text-[10px] text-emerald-400 font-bold mb-1 uppercase tracking-tighter"><i class="fas fa-terminal"></i> Task Executed</div>${text}</div>`;
+                displayOutput = `<div class="bg-emerald-500/10 border-l-4 border-emerald-400 p-3 mb-3 rounded-r-lg"><div class="text-[10px] text-emerald-400 font-bold mb-1 uppercase tracking-tighter"><i class="fas fa-terminal"></i> Task Executed</div>${text}</div>`;
                 contentNode.innerHTML = displayOutput;
             } else {
                 contentNode.innerHTML = marked.parse(text || "");
             }
             msgBox.appendChild(contentNode);
 
-            // ✨ Artifacts 渲染增強 (含 Tailwind 注入防護)
+            // Artifacts
             const codeBlockRegex = /```(?:html|xml|svg)\n?([\s\S]*?)```/g;
             let match;
             while ((match = codeBlockRegex.exec(text)) !== null) {
@@ -211,9 +173,9 @@
                 const safeCode = `<!DOCTYPE html><html><head><script src="https://cdn.tailwindcss.com"><\/script><style>body{margin:0;padding:16px;font-family:sans-serif;}</style></head><body>${rawCode}</body></html>`;
                 
                 const artifactContainer = document.createElement('div');
-                artifactContainer.className = "artifact-container animate-fade-in";
+                artifactContainer.className = "mt-4 border border-white/10 rounded-xl overflow-hidden bg-white animate-fade-in";
                 artifactContainer.innerHTML = `
-                    <div class="artifact-header">
+                    <div class="bg-slate-800 px-3 py-2 flex justify-between items-center text-emerald-400 text-[10px] font-black tracking-widest uppercase">
                         <span><i class="fas fa-layer-group"></i> ARTIFACT RENDERED</span>
                         <button onclick="this.parentElement.nextElementSibling.srcdoc=this.parentElement.nextElementSibling.getAttribute('data-raw')" class="hover:text-white transition-colors focus:outline-none"><i class="fas fa-sync-alt"></i></button>
                     </div>
@@ -227,7 +189,6 @@
             chatWindow.scrollTop = chatWindow.scrollHeight;
         }
 
-        // --- 輔助函式 ---
         function clearFile() { activeFile = null; previewBar.classList.add('hidden'); updateUI(); }
         document.getElementById('file-input').onchange = (e) => {
             activeFile = e.target.files[0]; if(!activeFile) return;
@@ -246,8 +207,9 @@
                 const d = await res.json(); const l = document.getElementById('history-list'); l.innerHTML = '';
                 d.sessions.forEach(s => {
                     const el = document.createElement('div');
-                    el.className = `history-item ${s.id === sessId ? 'active' : ''}`;
-                    el.innerHTML = `<span onclick="loadSession('${s.id}')" class="truncate flex-1">${s.title}</span><button onclick="deleteChat('${s.id}')" class="history-delete" title="刪除"><i class="fas fa-trash-alt"></i></button>`;
+                    // 💡 恢復 Inline Classes
+                    el.className = `p-3 rounded-xl text-xs flex justify-between items-center cursor-pointer mb-1 text-slate-400 hover:bg-white/5 transition-colors group ${s.id === sessId ? 'bg-emerald-500/10 text-emerald-400 font-bold' : ''}`;
+                    el.innerHTML = `<span onclick="loadSession('${s.id}')" class="truncate flex-1">${s.title}</span><button onclick="deleteChat('${s.id}')" class="opacity-0 group-hover:opacity-100 hover:text-red-400 transition-opacity p-1 focus:outline-none" title="刪除"><i class="fas fa-trash-alt"></i></button>`;
                     l.appendChild(el);
                 });
             } catch(e){}
