@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>anyGem v55.0 : Hybrid Presentation Engine</title>
-    <script src="[https://cdn.tailwindcss.com](https://cdn.tailwindcss.com)"></script>
-    <script src="[https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js](https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js)"></script>
-    <link href="[https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css](https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css)" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
         :root { --bg-dark: #020617; --bg-panel: #1e293b; --accent: #10b981; --text: #e2e8f0; }
         body { margin: 0; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: var(--bg-dark); color: var(--text); overflow: hidden; display: flex; height: 100vh; width: 100vw; }
@@ -124,8 +124,7 @@
         </footer>
     </div>
     <script>
-        // ⚠️ 記得確認這是你正確的 GAS 部署網址
-        const GAS_URL = "[https://script.google.com/macros/s/AKfycbwsng4RBCTX67my46U4fv7BhDYT0CIZt95dL7DNCFJTGUJLZFd_854vRGeUsQ1_BjG9/exec](https://script.google.com/macros/s/AKfycbwsng4RBCTX67my46U4fv7BhDYT0CIZt95dL7DNCFJTGUJLZFd_854vRGeUsQ1_BjG9/exec)";
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbwsng4RBCTX67my46U4fv7BhDYT0CIZt95dL7DNCFJTGUJLZFd_854vRGeUsQ1_BjG9/exec"; // ⚠️ 請務必更換！
         let sessId = localStorage.getItem('ANYGEM_USER_ID') || "UID_" + Date.now(); localStorage.setItem('ANYGEM_USER_ID', sessId);
         const chatWindow = document.getElementById('chat-window'), input = document.getElementById('user-input'), btn = document.getElementById('send-btn'), modeSelect = document.getElementById('mode-select'), searchOptions = document.getElementById('search-options'), reportPanel = document.getElementById('report-panel'), pptPanel = document.getElementById('ppt-panel'), previewBar = document.getElementById('file-preview-bar');
         let activeFile = null;
@@ -153,8 +152,8 @@
                     length: document.getElementById('ppt-length').value, 
                     density: document.getElementById('ppt-density').value, 
                     theme: document.getElementById('ppt-theme').value, 
-                    ppt_mode: document.getElementById('ppt-mode').value,
-                    visual_style: preset === 'custom' ? custom : preset
+                    ppt_mode: document.getElementById('ppt-mode').value, // 新增：混合/幾何/AI
+                    visual_style: preset === 'custom' ? custom : preset // 新增：視覺風格
                 };
             }
             const tempFile = activeFile; input.value = ''; clearFile();
