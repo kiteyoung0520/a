@@ -21,7 +21,7 @@
         .task-item { display: flex; align-items: center; gap: 8px; font-size: 11px; font-family: monospace; color: #a7f3d0; padding: 4px 0; }
         .task-item i { color: #34d399; }
 
-        /* Pro 級沙箱樣式 */
+        /* Pro 級沙箱樣式 (Artifacts) */
         .artifact-window { margin-top: 16px; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; overflow: hidden; background: #0f172a; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         .mac-header { background: #1e293b; padding: 10px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.05); }
         .mac-dots { display: flex; gap: 6px; }
@@ -98,7 +98,7 @@
     </div>
 
     <script>
-        // ⚠️【極度重要】請替換為您的 GAS Exec URL
+        // ⚠️【極度重要】請替換為您的 GAS 網頁應用程式 URL
         const GAS_URL = "https://script.google.com/macros/s/AKfycbwsng4RBCTX67my46U4fv7BhDYT0CIZt95dL7DNCFJTGUJLZFd_854vRGeUsQ1_BjG9/exec"; 
         
         let sessId = localStorage.getItem('ANYGEM_USER_ID') || "UID_" + Math.random().toString(36).substr(2, 9).toUpperCase();
@@ -107,7 +107,7 @@
         const chatWindow = document.getElementById('chat-window'), input = document.getElementById('user-input'), btn = document.getElementById('send-btn'), modeSelect = document.getElementById('mode-select'), previewBar = document.getElementById('file-preview-bar');
         let activeFile = null;
 
-        // ✨ 根據選擇的模式更新 Placeholder
+        // 根據選擇的模式更新 Placeholder
         function updateUI() {
             if (modeSelect.value === 'drawing') {
                 input.placeholder = "描述圖片，例如：賽博龐克風格的招牌...";
@@ -123,7 +123,11 @@
             const text = input.value.trim(); if(!text && !activeFile) return;
             addMessage('user', text, { fileName: activeFile?.name });
             const payload = { message: text, session_id: sessId, mode: modeSelect.value };
-            const tempFile = activeFile; input.value = ''; clearFile();
+            const tempFile = activeFile; 
+            
+            // 清空輸入框
+            input.value = ''; 
+            clearFile();
 
             if(tempFile) {
                 setLoading(true, "Analyzing Image...");
@@ -140,22 +144,28 @@
                 if(data.status === "success") {
                     addMessage('ai', data.reply, { model: data.model, image: data.image, mime: data.mime, actionLog: data.actionLog });
                     fetchHistoryList();
-                } else addMessage('ai', "🚨 系統錯誤: " + data.error);
-            } catch (e) { addMessage('ai', "❌ 連線失敗，請檢查您的 GAS_URL 網址或是否已完成 Google 帳號授權。"); }
-            finally { setLoading(false); }
+                } else {
+                    addMessage('ai', "🚨 系統錯誤: " + data.error);
+                }
+            } catch (e) { 
+                addMessage('ai', "❌ 連線失敗，請檢查您的 GAS_URL 網址或是否已完成 Google 帳號授權。"); 
+            } finally { 
+                setLoading(false); 
+            }
         }
 
-        // --- 核心渲染 UI ---
+        // --- 核心：渲染對話、任務清單與程式碼沙箱 ---
         function addMessage(role, text, meta = null) {
             const wrapper = document.createElement('div');
             wrapper.className = `flex ${role === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in mb-6`;
             const msgBox = document.createElement('div');
             msgBox.className = `max-w-[95%] md:max-w-[85%] p-4 rounded-2xl shadow-xl relative ${role === 'user' ? 'bg-emerald-600 text-white rounded-tr-none' : 'bg-[#1e293b] text-slate-200 border border-emerald-500/10 rounded-tl-none'}`;
             
+            // 附件預覽
             if(meta?.fileName) msgBox.innerHTML += `<div class="mb-2 p-2 bg-black/20 rounded-lg text-[10px] flex items-center gap-2 border border-white/10"><i class="fas fa-file-image"></i> ${meta.fileName}</div>`;
             if(meta?.image) msgBox.innerHTML += `<img src="data:${meta.mime || 'image/png'};base64,${meta.image}" class="w-full rounded-xl mb-3 shadow-lg border border-white/10">`;
 
-            // 渲染動態任務軌跡清單
+            // 渲染動態任務軌跡清單 (Task Execution Chain)
             if (role === 'ai' && meta?.actionLog && meta.actionLog.length > 0) {
                 let taskHtml = `<div class="agent-task-list"><div class="text-[10px] font-bold text-emerald-400 mb-2 tracking-widest uppercase"><i class="fas fa-network-wired"></i> Task Execution Chain</div>`;
                 meta.actionLog.forEach(action => {
@@ -169,7 +179,7 @@
             const contentNode = document.createElement('div');
             contentNode.className = "prose prose-invert prose-sm max-w-none leading-relaxed mt-2";
             
-            // 處理 Artifacts 沙箱
+            // 攔截並渲染 Artifacts (HTML/SVG 沙箱)
             const codeBlockRegex = /```(?:html|xml|svg)([\s\S]*?)```/g;
             let match;
             let hasArtifact = false;
@@ -202,6 +212,7 @@
             contentNode.innerHTML = hasArtifact ? processedText : marked.parse(text || "");
             msgBox.appendChild(contentNode);
 
+            // 加入一鍵複製按鈕
             if (role === 'ai') {
                 const actions = document.createElement('div');
                 actions.className = "flex justify-end gap-2 mt-3 pt-3 border-t border-white/5";
@@ -217,6 +228,7 @@
             chatWindow.scrollTop = chatWindow.scrollHeight;
         }
 
+        // 沙箱 Tab 切換邏輯
         function switchTab(id, type, element) {
             document.getElementById(id + '_preview').classList.remove('active');
             document.getElementById(id + '_code').classList.remove('active');
@@ -226,17 +238,26 @@
             element.classList.add('active');
         }
 
-        function clearFile() { activeFile = null; previewBar.classList.add('hidden'); updateUI(); }
+        // 清除檔案附件
+        function clearFile() { 
+            activeFile = null; 
+            document.getElementById('file-input').value = ''; // 徹底清空 input，避免選同檔案不觸發 change
+            previewBar.classList.add('hidden'); 
+            updateUI(); 
+        }
+
         document.getElementById('file-input').onchange = (e) => {
             activeFile = e.target.files[0]; if(!activeFile) return;
             previewBar.classList.remove('hidden'); document.getElementById('file-name-label').innerText = activeFile.name;
             const thumb = document.getElementById('file-thumb');
             thumb.innerHTML = activeFile.type.startsWith('image/') ? `<img src="${URL.createObjectURL(activeFile)}" class="w-full h-full object-cover">` : `<i class="fas fa-file"></i>`;
         };
+
         function toBase64(f) { return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(f); }); }
         function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); document.getElementById('sidebar-overlay').classList.toggle('hidden'); }
         function newChat() { sessId = "UID_" + Date.now(); localStorage.setItem('ANYGEM_USER_ID', sessId); chatWindow.innerHTML = ''; fetchHistoryList(); if(window.innerWidth < 768) toggleSidebar(); }
         
+        // --- 歷史紀錄管理 ---
         async function fetchHistoryList() { 
             try {
                 const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ mode: 'system', action: 'get_session_list' }) });
@@ -244,10 +265,12 @@
                 if(d.sessions.length === 0) { l.innerHTML = '<div class="text-center text-xs text-slate-600 mt-10">尚無紀錄</div>'; return; }
                 d.sessions.forEach(s => {
                     const el = document.createElement('div'); el.className = `p-3 rounded-xl text-xs flex justify-between items-center cursor-pointer mb-1 transition-colors ${s.id === sessId ? 'bg-emerald-900/30 text-emerald-400 border border-emerald-500/20' : 'text-slate-400 hover:bg-white/5'}`;
-                    el.innerHTML = `<span onclick="loadSession('${s.id}')" class="truncate flex-1 font-medium"><i class="far fa-comment-alt mr-2 opacity-50"></i>${s.title}</span><i onclick="deleteChat('${s.id}')" class="fas fa-trash-alt ml-2 text-slate-600 hover:text-red-400 p-1"></i>`; l.appendChild(el);
+                    el.innerHTML = `<span onclick="loadSession('${s.id}')" class="truncate flex-1 font-medium"><i class="far fa-comment-alt mr-2 opacity-50"></i>${s.title}</span><button onclick="deleteChat('${s.id}', event)" class="ml-2 text-slate-600 hover:text-red-400 p-1"><i class="fas fa-trash-alt"></i></button>`; 
+                    l.appendChild(el);
                 });
             } catch(e){}
         }
+
         async function loadSession(id) { 
             sessId = id; localStorage.setItem('ANYGEM_USER_ID', id); chatWindow.innerHTML = '<div class="flex justify-center items-center h-40"><i class="fas fa-circle-notch fa-spin text-emerald-500 text-2xl"></i></div>';
             try {
@@ -256,8 +279,19 @@
                 if(window.innerWidth < 768) toggleSidebar();
             } catch(e) { chatWindow.innerHTML = '<div class="text-center text-red-400">載入失敗</div>'; }
         }
-        async function deleteChat(id) { if(confirm("確定永久刪除？")) { await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ mode: 'system', action: 'delete_session', session_id: id }) }); if(id===sessId) newChat(); else fetchHistoryList(); } }
+
+        // ✨ 觸發後端真正刪除的邏輯
+        async function deleteChat(id, event) { 
+            event.stopPropagation(); // 避免點擊垃圾桶時觸發載入對話
+            if(confirm("確定要永久刪除此對話紀錄嗎？")) { 
+                try {
+                    await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ mode: 'system', action: 'delete_session', session_id: id }) }); 
+                    if(id === sessId) newChat(); else fetchHistoryList(); 
+                } catch(e) { alert("刪除失敗，請檢查連線狀態。"); }
+            } 
+        }
         
+        // Loading 動畫
         function setLoading(l, t) { 
             btn.disabled = l; 
             if(l) { 
@@ -268,7 +302,9 @@
             } else document.getElementById('loader')?.remove(); 
         }
         
-        updateUI(); fetchHistoryList();
+        // 頁面初始化
+        updateUI(); 
+        fetchHistoryList();
         input.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } });
     </script>
 </body>
