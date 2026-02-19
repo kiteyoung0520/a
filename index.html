@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>anyGem v70.2 : Ultimate Agent UI</title>
+    <title>anyGem v71 : Dual Mode Agent</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
@@ -34,6 +34,8 @@
         .artifact-content.active { display: block; }
         iframe.artifact-frame { width: 100%; min-height: 350px; border: none; background: white; }
         .code-view { padding: 16px; font-family: monospace; font-size: 12px; color: #38bdf8; overflow-x: auto; max-height: 400px; white-space: pre-wrap; background: #020617; }
+        
+        /* 選擇器樣式優化 */
         select option { background-color: #1e293b; color: #ffffff; padding: 10px; }
     </style>
 </head>
@@ -46,7 +48,7 @@
             </button>
         </div>
         <div class="flex-grow overflow-y-auto p-3 space-y-2" id="history-list"></div>
-        <div class="p-4 text-[10px] text-center text-slate-500 font-mono tracking-widest border-t border-white/5">anyGem v70.2 PRO</div>
+        <div class="p-4 text-[10px] text-center text-slate-500 font-mono tracking-widest border-t border-white/5">anyGem v71 PRO</div>
     </aside>
 
     <div id="sidebar-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black/50 z-40 hidden md:hidden glass"></div>
@@ -56,11 +58,12 @@
             <div class="max-w-4xl mx-auto flex justify-between items-center">
                 <div class="flex items-center gap-3">
                     <button onclick="toggleSidebar()" class="md:hidden text-white p-2 hover:bg-white/10 rounded-lg"><i class="fas fa-bars"></i></button>
-                    <span class="text-xl font-black text-white italic tracking-tighter uppercase">anyGem <span class="text-emerald-500 text-sm">v70</span></span>
+                    <span class="text-xl font-black text-white italic tracking-tighter uppercase">anyGem <span class="text-emerald-500 text-sm">v71</span></span>
                 </div>
                 <select id="mode-select" onchange="updateUI()" class="bg-emerald-900/40 text-white text-xs py-2 px-3 rounded-xl border border-emerald-500/50 outline-none cursor-pointer hover:bg-emerald-900/60 transition-colors">
-                    <option value="chat" selected>🧠 Agentic Workflow</option>
-                    <option value="drawing">🎨 Art Director</option>
+                    <option value="chat" selected>🧠 Agentic Workflow (工具)</option>
+                    <option value="search">🌐 Web Search (連網)</option>
+                    <option value="drawing">🎨 Art Director (生圖)</option>
                 </select>
             </div>
         </header>
@@ -85,7 +88,7 @@
                     <i class="fas fa-paperclip text-emerald-400 text-lg"></i>
                 </button>
                 <div class="flex-grow">
-                    <textarea id="user-input" rows="1" class="w-full bg-[#1e293b] rounded-2xl px-5 py-4 text-white text-sm outline-none focus:ring-1 focus:ring-emerald-500/50 resize-none border border-white/5" placeholder="輸入指令：上網查天氣並寫入試算表..."></textarea>
+                    <textarea id="user-input" rows="1" class="w-full bg-[#1e293b] rounded-2xl px-5 py-4 text-white text-sm outline-none focus:ring-1 focus:ring-emerald-500/50 resize-none border border-white/5" placeholder="輸入指令..."></textarea>
                 </div>
                 <button onclick="handleSend()" id="send-btn" class="bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-4 rounded-2xl font-black uppercase active:scale-95 transition-all flex items-center gap-2">
                     <span>Send</span><i class="fas fa-paper-plane text-xs"></i>
@@ -104,8 +107,15 @@
         const chatWindow = document.getElementById('chat-window'), input = document.getElementById('user-input'), btn = document.getElementById('send-btn'), modeSelect = document.getElementById('mode-select'), previewBar = document.getElementById('file-preview-bar');
         let activeFile = null;
 
+        // ✨ 根據選擇的模式更新 Placeholder
         function updateUI() {
-            input.placeholder = modeSelect.value === 'drawing' ? "描述圖片，例如：賽博龐克風格的招牌..." : "輸入指令：上網查天氣、建日曆、收信...";
+            if (modeSelect.value === 'drawing') {
+                input.placeholder = "描述圖片，例如：賽博龐克風格的招牌...";
+            } else if (modeSelect.value === 'search') {
+                input.placeholder = "輸入問題上網找答案，例如：今天台北的天氣如何？";
+            } else {
+                input.placeholder = "輸入工作指令：建日曆、草擬回信、整理成簡報...";
+            }
             input.focus();
         }
 
@@ -120,7 +130,9 @@
                 const base64 = await toBase64(tempFile);
                 payload.file_data = base64.split(',')[1];
                 payload.mime_type = tempFile.type;
-            } else setLoading(true, "Agent Planning & Executing...");
+            } else {
+                setLoading(true, modeSelect.value === 'search' ? "Google Searching..." : "Agent Planning...");
+            }
 
             try {
                 const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(payload) });
@@ -147,7 +159,6 @@
             if (role === 'ai' && meta?.actionLog && meta.actionLog.length > 0) {
                 let taskHtml = `<div class="agent-task-list"><div class="text-[10px] font-bold text-emerald-400 mb-2 tracking-widest uppercase"><i class="fas fa-network-wired"></i> Task Execution Chain</div>`;
                 meta.actionLog.forEach(action => {
-                    // 如果有搜尋動作，加入特別圖示
                     let icon = action === "Google_Search" ? "fa-search" : "fa-check-circle";
                     taskHtml += `<div class="task-item"><i class="fas ${icon}"></i> Executed: <span>${action}</span></div>`;
                 });
