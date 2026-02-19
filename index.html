@@ -116,11 +116,12 @@
                     </button>
                 </div>
             </div>
-            <div class="text-center mt-2 text-xs text-gray-500 font-mono">Powered by anyGem Edge Engine v62.7 (Artifacts & Function Calling Enabled)</div>
+            <div class="text-center mt-2 text-xs text-gray-500 font-mono">Powered by anyGem Edge Engine v62.8 (Batch Processing Enabled)</div>
         </div>
     </main>
 
     <script>
+        // ⚠️ 請確認此網址是您最新的 Google Apps Script 部署網址
         const GAS_URL = "https://script.google.com/macros/s/AKfycbwsng4RBCTX67my46U4fv7BhDYT0CIZt95dL7DNCFJTGUJLZFd_854vRGeUsQ1_BjG9/exec"; 
         
         let currentSessionId = generateUUID();
@@ -294,6 +295,9 @@
         function removeLoading(id) { const el = document.getElementById(id); if (el) el.remove(); }
         function scrollToBottom() { chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'smooth' }); }
 
+        // ==========================================
+        // 🌟 側邊欄與 Session 管理 (修復點選無反應問題)
+        // ==========================================
         function generateUUID() {
             return 'xxxx-4xxx-yxxx'.replace(/[xy]/g, function(c) {
                 var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8); return v.toString(16);
@@ -317,17 +321,22 @@
             const loadingId = appendLoading();
             if (window.innerWidth < 768) toggleSidebar();
             
-            const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ mode: 'system', action: 'load_session', session_id: id }) });
-            const data = await res.json();
-            removeLoading(loadingId);
-            
-            if (data.logs.length === 0) appendMessage('ai', "這是一段新的對話。");
-            data.logs.forEach(log => appendMessage(log.role === 'ai' ? 'ai' : 'user', log.text));
-            loadSessions();
+            try {
+                const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ mode: 'system', action: 'load_session', session_id: id }) });
+                const data = await res.json();
+                removeLoading(loadingId);
+                
+                if (data.logs.length === 0) appendMessage('ai', "這是一段新的對話。");
+                data.logs.forEach(log => appendMessage(log.role === 'ai' ? 'ai' : 'user', log.text));
+                loadSessions();
+            } catch (e) {
+                removeLoading(loadingId);
+                console.error("切換失敗", e);
+            }
         }
 
         async function renameSession(id, oldTitle, event) {
-            event.stopPropagation(); 
+            // event.stopPropagation() 已在 addEventListener 中處理
             const newTitle = prompt("請輸入新的對話名稱：", oldTitle);
             if (newTitle && newTitle.trim() !== "" && newTitle !== oldTitle) {
                 await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ mode: 'system', action: 'rename_session', session_id: id, new_title: newTitle.trim() }) });
@@ -336,7 +345,7 @@
         }
 
         async function deleteSession(id, event) {
-            event.stopPropagation(); 
+            // event.stopPropagation() 已在 addEventListener 中處理
             if (confirm("確定要刪除這筆對話紀錄嗎？(刪除後無法復原)")) {
                 await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ mode: 'system', action: 'delete_session', session_id: id }) });
                 if (currentSessionId === id) startNewSession(); 
@@ -351,26 +360,50 @@
                 sessionList.innerHTML = '';
                 
                 data.sessions.forEach(s => {
+                    // 1. 建立容器 (不使用 innerHTML 拼接，避免引號問題)
                     const div = document.createElement('div');
                     const isActive = s.id === currentSessionId;
                     div.className = `w-full text-left px-3 py-2.5 rounded-lg text-sm transition-colors flex items-center justify-between group cursor-pointer ${isActive ? 'bg-[#333] text-white' : 'text-gray-400 hover:bg-[#2a2b2f] hover:text-gray-200'}`;
-                    const safeTitle = s.title.replace(/'/g, "\\'").replace(/"/g, '&quot;');
-                    const btnDisplayClass = isActive ? 'flex' : 'hidden md:group-hover:flex';
+                    
+                    // 2. 建立主要點擊區域 (圖示 + 文字)
+                    const contentDiv = document.createElement('div');
+                    contentDiv.className = "flex items-center gap-2 flex-1 truncate";
+                    contentDiv.innerHTML = `<span class="material-symbols-rounded text-[18px]">chat_bubble</span> <span class="flex-1 truncate">${s.title || "新對話"}</span>`;
+                    
+                    // 🚀 關鍵修復：使用 addEventListener 綁定點擊，而非 onclick 字串
+                    div.addEventListener('click', () => {
+                        switchSession(s.id, s.title || "新對話");
+                    });
 
-                    div.innerHTML = `
-                        <div class="flex items-center gap-2 flex-1 truncate" onclick="switchSession('${s.id}', '${safeTitle}')">
-                            <span class="material-symbols-rounded text-[18px]">chat_bubble</span>
-                            <span class="flex-1 truncate">${s.title}</span>
-                        </div>
-                        <div class="${btnDisplayClass} items-center gap-1 ml-2">
-                            <button onclick="renameSession('${s.id}', '${safeTitle}', event)" class="text-gray-400 hover:text-blue-400 p-1 rounded transition-colors" title="重新命名">
-                                <span class="material-symbols-rounded text-[16px]">edit</span>
-                            </button>
-                            <button onclick="deleteSession('${s.id}', event)" class="text-gray-400 hover:text-red-400 p-1 rounded transition-colors" title="刪除">
-                                <span class="material-symbols-rounded text-[16px]">delete</span>
-                            </button>
-                        </div>
-                    `;
+                    // 3. 建立按鈕區域
+                    const btnDiv = document.createElement('div');
+                    btnDiv.className = `${isActive ? 'flex' : 'hidden md:group-hover:flex'} items-center gap-1 ml-2`;
+                    
+                    // 編輯按鈕
+                    const editBtn = document.createElement('button');
+                    editBtn.className = "text-gray-400 hover:text-blue-400 p-1 rounded transition-colors";
+                    editBtn.title = "重新命名";
+                    editBtn.innerHTML = '<span class="material-symbols-rounded text-[16px]">edit</span>';
+                    editBtn.addEventListener('click', (e) => {
+                        e.stopPropagation(); // 阻止冒泡，避免觸發切換對話
+                        renameSession(s.id, s.title || "新對話", e);
+                    });
+
+                    // 刪除按鈕
+                    const delBtn = document.createElement('button');
+                    delBtn.className = "text-gray-400 hover:text-red-400 p-1 rounded transition-colors";
+                    delBtn.title = "刪除";
+                    delBtn.innerHTML = '<span class="material-symbols-rounded text-[16px]">delete</span>';
+                    delBtn.addEventListener('click', (e) => {
+                        e.stopPropagation(); // 阻止冒泡
+                        deleteSession(s.id, e);
+                    });
+
+                    btnDiv.appendChild(editBtn);
+                    btnDiv.appendChild(delBtn);
+
+                    div.appendChild(contentDiv);
+                    div.appendChild(btnDiv);
                     sessionList.appendChild(div);
                 });
             } catch(e) { console.error("無法讀取歷史:", e); }
