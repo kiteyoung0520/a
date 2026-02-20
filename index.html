@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>anyGem - Super Agent v63.0</title>
+    <title>anyGem - Super Agent v64.0 (Search Edition)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0" />
@@ -68,7 +68,7 @@
         </div>
         <div id="session-list" class="flex-1 overflow-y-auto px-3 space-y-1">
             </div>
-        <div class="p-4 border-t border-[#333] text-xs text-gray-500 text-center font-mono">v63.0 Stable</div>
+        <div class="p-4 border-t border-[#333] text-xs text-gray-500 text-center font-mono">v64.0 Search Edition</div>
     </aside>
 
     <main class="flex-1 flex flex-col relative bg-[#131314]">
@@ -83,7 +83,7 @@
                 <div class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center shadow-lg"><span class="material-symbols-rounded text-white">smart_toy</span></div>
                 <div>
                     <h2 class="text-2xl font-bold text-white mb-2">我是您的 anyGem 代理人</h2>
-                    <p class="text-gray-400">我已準備好協助您處理日曆、文件、筆記或開發工具。請告訴我您的需求。</p>
+                    <p class="text-gray-400">我已準備好協助您處理日曆、文件、筆記或開發工具。您可以開啟下方「連網模式」讓我搜尋最新資訊。</p>
                 </div>
             </div>
         </div>
@@ -102,7 +102,17 @@
                 </div>
 
                 <div class="bg-[#1e1f22] rounded-2xl border border-[#333] shadow-2xl focus-within:border-blue-500 transition-all p-2">
-                    <div class="flex items-end gap-2">
+                    <div class="flex items-center gap-2 px-3 mb-2 pt-1 border-b border-[#333] pb-2">
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="web-search-toggle" class="sr-only peer">
+                            <div class="w-8 h-4 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-blue-600"></div>
+                            <span class="ml-2 text-xs font-medium text-gray-400 peer-checked:text-blue-400 flex items-center gap-1">
+                                <span class="material-symbols-rounded text-sm">language</span> 連網搜尋模式
+                            </span>
+                        </label>
+                    </div>
+                    
+                    <div class="flex items-end gap-2 mt-1">
                         <button onclick="document.getElementById('file-upload').click()" class="p-3 text-gray-400 hover:text-white hover:bg-[#333] rounded-xl transition-all"><span class="material-symbols-rounded">attach_file</span></button>
                         <input type="file" id="file-upload" class="hidden" onchange="handleFileUpload(event)" accept="image/*,application/pdf,text/*">
                         
@@ -125,7 +135,6 @@
         let currentImageData = null, currentMimeType = null, currentDocumentText = null, currentDocumentName = null;
         let isWaiting = false, currentRenderCode = "";
 
-        // UI 初始化
         const chatContainer = document.getElementById('chat-container');
         const userInput = document.getElementById('user-input');
         const sendBtn = document.getElementById('send-btn');
@@ -143,11 +152,13 @@
             }
         });
 
-        // 1. 訊息發送邏輯
         async function sendMessage() {
             const text = userInput.value.trim();
             if (!text && !currentImageData && !currentDocumentText) return;
             if (isWaiting) return;
+
+            // 🚀 新增：抓取開關狀態
+            const isWebSearchEnabled = document.getElementById('web-search-toggle').checked;
 
             let displayUserText = currentDocumentName ? `📎 [文件: ${currentDocumentName}]\n${text}` : text;
             appendMessage('user', displayUserText, currentImageData);
@@ -166,7 +177,13 @@
             try {
                 const response = await fetch(GAS_URL, {
                     method: 'POST',
-                    body: JSON.stringify({ message: payloadText, session_id: currentSessionId, file_data: imgBase64, mime_type: mime })
+                    body: JSON.stringify({ 
+                        message: payloadText, 
+                        session_id: currentSessionId, 
+                        file_data: imgBase64, 
+                        mime_type: mime,
+                        web_search: isWebSearchEnabled // 🚀 傳遞連網狀態
+                    })
                 });
                 const data = await response.json();
                 removeLoading(loadingId);
@@ -182,7 +199,6 @@
             }
         }
 
-        // 2. 檔案處理
         async function handleFileUpload(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -230,7 +246,6 @@
             document.getElementById('upload-preview-container').classList.add('hidden');
         }
 
-        // 3. UI 元素生成
         function appendMessage(role, text, imageSrc = null, model = null) {
             const isAI = role === 'ai';
             const wrap = document.createElement('div');
@@ -249,7 +264,6 @@
             wrap.innerHTML = avatar + body;
             chatContainer.appendChild(wrap);
 
-            // 代碼塊預覽按鈕
             if (isAI) {
                 wrap.querySelectorAll('pre code.language-html').forEach(code => {
                     const btn = document.createElement('button');
@@ -276,7 +290,6 @@
         function removeLoading(id) { const el = document.getElementById(id); if (el) el.remove(); }
         function scrollToBottom() { chatContainer.scrollTop = chatContainer.scrollHeight; }
 
-        // 4. Session 管理 (側邊欄)
         function generateUUID() { return 'xxxx-4xxx-yxxx'.replace(/[xy]/g, c => (c === 'x' ? (Math.random() * 16 | 0) : (Math.random() * 16 | 0 & 0x3 | 0x8)).toString(16)); }
         function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); }
         
@@ -358,7 +371,6 @@
             }
         }
 
-        // 5. Artifacts 功能
         function openPreview(code) {
             currentRenderCode = code;
             document.getElementById('preview-modal').classList.remove('hidden');
