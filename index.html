@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>anyGem - Super Agent v64.0</title>
+    <title>anyGem - Super Agent v65.0 (UI Enhanced)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0" />
@@ -68,7 +68,7 @@
         </div>
         <div id="session-list" class="flex-1 overflow-y-auto px-3 space-y-1">
             </div>
-        <div class="p-4 border-t border-[#333] text-xs text-gray-500 text-center font-mono">v64.0 Search Edition</div>
+        <div class="p-4 border-t border-[#333] text-xs text-gray-500 text-center font-mono">v65.0 UI Enhanced Edition</div>
     </aside>
 
     <main class="flex-1 flex flex-col relative bg-[#131314]">
@@ -247,22 +247,57 @@
 
         function appendMessage(role, text, imageSrc = null, model = null) {
             const isAI = role === 'ai';
+            // 🚀 加入 group class 以便實現懸浮顯示
             const wrap = document.createElement('div');
-            wrap.className = `flex gap-4 max-w-4xl mx-auto w-full ${!isAI ? 'flex-row-reverse' : ''}`;
+            wrap.className = `flex gap-4 max-w-4xl mx-auto w-full group ${!isAI ? 'flex-row-reverse' : ''}`;
             
             const avatar = `<div class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 shadow-lg ${isAI ? 'bg-blue-600' : 'bg-gray-700'}">
                 <span class="material-symbols-rounded text-white text-xl">${isAI ? 'smart_toy' : 'person'}</span>
             </div>`;
 
-            let body = `<div class="flex-1 ${!isAI ? 'text-right' : ''} space-y-2 max-w-[85%]">`;
+            let body = `<div class="flex-1 ${!isAI ? 'text-right' : ''} space-y-2 max-w-[85%] relative">`;
             if (imageSrc) body += `<img src="${imageSrc}" class="rounded-xl border border-[#333] shadow-xl mb-2 max-w-full">`;
             if (text) body += `<div class="prose prose-invert text-gray-200 bg-[#1e1f22] p-5 rounded-2xl rounded-tl-none shadow-sm">${isAI ? marked.parse(text) : text.replace(/\n/g, '<br>')}</div>`;
             if (model === 'Agent-Executor') body += `<div class="text-[10px] text-blue-400 font-mono mt-2 flex items-center gap-1"><span class="material-symbols-rounded text-xs">settings_suggest</span>AGENT ACTION COMPLETED</div>`;
-            body += `</div>`;
+            
+            // 🚀 新增：為 AI 訊息加入操作列 (複製按鈕)
+            if (isAI && text) {
+                body += `
+                <div class="flex items-center gap-2 mt-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                    <button class="copy-btn flex items-center justify-center p-1.5 text-gray-400 hover:text-white hover:bg-[#333] rounded-md transition-colors" title="複製原始文字">
+                        <span class="material-symbols-rounded text-[18px]">content_copy</span>
+                    </button>
+                </div>`;
+            }
 
+            body += `</div>`;
             wrap.innerHTML = avatar + body;
             chatContainer.appendChild(wrap);
 
+            // 🚀 新增：綁定複製按鈕的事件監聽器
+            if (isAI && text) {
+                const copyBtn = wrap.querySelector('.copy-btn');
+                if (copyBtn) {
+                    copyBtn.addEventListener('click', () => {
+                        // 呼叫瀏覽器剪貼簿 API 複製原始 Markdown 文字
+                        navigator.clipboard.writeText(text).then(() => {
+                            const icon = copyBtn.querySelector('.material-symbols-rounded');
+                            icon.innerText = 'check'; // 變成打勾圖示
+                            icon.classList.add('text-green-400'); // 變成綠色
+                            
+                            // 兩秒後恢復原狀
+                            setTimeout(() => {
+                                icon.innerText = 'content_copy';
+                                icon.classList.remove('text-green-400');
+                            }, 2000);
+                        }).catch(err => {
+                            console.error('複製失敗:', err);
+                        });
+                    });
+                }
+            }
+
+            // 原有：代碼塊預覽按鈕
             if (isAI) {
                 wrap.querySelectorAll('pre code.language-html').forEach(code => {
                     const btn = document.createElement('button');
