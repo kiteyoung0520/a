@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>anyGem - Super Agent v64.0 (Search Edition)</title>
+    <title>anyGem - Super Agent v64.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0" />
@@ -157,7 +157,6 @@
             if (!text && !currentImageData && !currentDocumentText) return;
             if (isWaiting) return;
 
-            // 🚀 新增：抓取開關狀態
             const isWebSearchEnabled = document.getElementById('web-search-toggle').checked;
 
             let displayUserText = currentDocumentName ? `📎 [文件: ${currentDocumentName}]\n${text}` : text;
@@ -182,7 +181,7 @@
                         session_id: currentSessionId, 
                         file_data: imgBase64, 
                         mime_type: mime,
-                        web_search: isWebSearchEnabled // 🚀 傳遞連網狀態
+                        web_search: isWebSearchEnabled 
                     })
                 });
                 const data = await response.json();
