@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>anyGem - Super Agent v65.0 (UI Enhanced)</title>
+    <title>anyGem - Super Agent v69.0 (UI Enhanced)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0" />
@@ -34,6 +34,8 @@
         @keyframes blink { 0% { opacity: 0.2; } 20% { opacity: 1; } 100% { opacity: 0.2; } }
 
         .active-session { background-color: #33353a; color: white; border-left: 4px solid #8ab4f8; }
+        /* 釘選動畫 */
+        .pinned-icon { transform: rotate(-45deg); color: #8ab4f8; }
     </style>
 </head>
 <body class="h-screen flex overflow-hidden">
@@ -68,7 +70,7 @@
         </div>
         <div id="session-list" class="flex-1 overflow-y-auto px-3 space-y-1">
             </div>
-        <div class="p-4 border-t border-[#333] text-xs text-gray-500 text-center font-mono">v65.0 UI Enhanced Edition</div>
+        <div class="p-4 border-t border-[#333] text-xs text-gray-500 text-center font-mono">v69.0 AI Director Edition</div>
     </aside>
 
     <main class="flex-1 flex flex-col relative bg-[#131314]">
@@ -128,7 +130,7 @@
     </main>
 
     <script>
-        // ⚠️ 請在此處替換成您的 GAS 部署網址
+        // ⚠️ 請確保這裡填入的是您最新的 GAS 部署網址
         const GAS_URL = "https://script.google.com/macros/s/AKfycbwsng4RBCTX67my46U4fv7BhDYT0CIZt95dL7DNCFJTGUJLZFd_854vRGeUsQ1_BjG9/exec";
 
         let currentSessionId = generateUUID();
@@ -247,7 +249,6 @@
 
         function appendMessage(role, text, imageSrc = null, model = null) {
             const isAI = role === 'ai';
-            // 🚀 加入 group class 以便實現懸浮顯示
             const wrap = document.createElement('div');
             wrap.className = `flex gap-4 max-w-4xl mx-auto w-full group ${!isAI ? 'flex-row-reverse' : ''}`;
             
@@ -260,7 +261,6 @@
             if (text) body += `<div class="prose prose-invert text-gray-200 bg-[#1e1f22] p-5 rounded-2xl rounded-tl-none shadow-sm">${isAI ? marked.parse(text) : text.replace(/\n/g, '<br>')}</div>`;
             if (model === 'Agent-Executor') body += `<div class="text-[10px] text-blue-400 font-mono mt-2 flex items-center gap-1"><span class="material-symbols-rounded text-xs">settings_suggest</span>AGENT ACTION COMPLETED</div>`;
             
-            // 🚀 新增：為 AI 訊息加入操作列 (複製按鈕)
             if (isAI && text) {
                 body += `
                 <div class="flex items-center gap-2 mt-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
@@ -274,18 +274,14 @@
             wrap.innerHTML = avatar + body;
             chatContainer.appendChild(wrap);
 
-            // 🚀 新增：綁定複製按鈕的事件監聽器
             if (isAI && text) {
                 const copyBtn = wrap.querySelector('.copy-btn');
                 if (copyBtn) {
                     copyBtn.addEventListener('click', () => {
-                        // 呼叫瀏覽器剪貼簿 API 複製原始 Markdown 文字
                         navigator.clipboard.writeText(text).then(() => {
                             const icon = copyBtn.querySelector('.material-symbols-rounded');
-                            icon.innerText = 'check'; // 變成打勾圖示
-                            icon.classList.add('text-green-400'); // 變成綠色
-                            
-                            // 兩秒後恢復原狀
+                            icon.innerText = 'check'; 
+                            icon.classList.add('text-green-400'); 
                             setTimeout(() => {
                                 icon.innerText = 'content_copy';
                                 icon.classList.remove('text-green-400');
@@ -297,7 +293,6 @@
                 }
             }
 
-            // 原有：代碼塊預覽按鈕
             if (isAI) {
                 wrap.querySelectorAll('pre code.language-html').forEach(code => {
                     const btn = document.createElement('button');
@@ -361,33 +356,67 @@
 
                 data.sessions.forEach(s => {
                     const isActive = s.id === currentSessionId;
+                    const isPinned = s.pinned; // 讀取後端傳來的釘選狀態
+
                     const item = document.createElement('div');
                     item.className = `group flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all ${isActive ? 'active-session' : 'text-gray-400 hover:bg-[#2a2b2f] hover:text-white'}`;
                     
                     const titleWrap = document.createElement('div');
                     titleWrap.className = "flex items-center gap-3 flex-1 truncate";
-                    titleWrap.innerHTML = `<span class="material-symbols-rounded text-lg">${isActive ? 'chat_bubble' : 'chat'}</span> <span class="truncate text-sm">${s.title}</span>`;
+                    
+                    // 根據釘選狀態決定圖示
+                    const iconName = isPinned ? 'push_pin' : (isActive ? 'chat_bubble' : 'chat');
+                    const iconClass = isPinned ? 'pinned-icon' : '';
+                    titleWrap.innerHTML = `<span class="material-symbols-rounded text-lg ${iconClass}">${iconName}</span> <span class="truncate text-sm">${s.title}</span>`;
                     
                     item.addEventListener('click', () => switchSession(s.id, s.title));
 
                     const btns = document.createElement('div');
                     btns.className = `flex items-center gap-1 ${isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`;
                     
+                    // 🌟 新增：釘選按鈕
+                    const pinBtn = document.createElement('button');
+                    pinBtn.className = `p-1 ${isPinned ? 'text-blue-500 hover:text-blue-400' : 'hover:text-blue-400'}`;
+                    pinBtn.innerHTML = '<span class="material-symbols-rounded text-sm">push_pin</span>';
+                    pinBtn.title = isPinned ? "取消釘選" : "釘選對話";
+                    pinBtn.onclick = (e) => { e.stopPropagation(); togglePinSession(s.id, isPinned); };
+
                     const editBtn = document.createElement('button');
                     editBtn.className = "p-1 hover:text-blue-400";
                     editBtn.innerHTML = '<span class="material-symbols-rounded text-sm">edit</span>';
+                    editBtn.title = "重新命名";
                     editBtn.onclick = (e) => { e.stopPropagation(); renameSession(s.id, s.title); };
 
                     const delBtn = document.createElement('button');
                     delBtn.className = "p-1 hover:text-red-400";
                     delBtn.innerHTML = '<span class="material-symbols-rounded text-sm">delete</span>';
+                    delBtn.title = "刪除對話";
                     delBtn.onclick = (e) => { e.stopPropagation(); deleteSession(s.id); };
 
-                    btns.appendChild(editBtn); btns.appendChild(delBtn);
-                    item.appendChild(titleWrap); item.appendChild(btns);
+                    btns.appendChild(pinBtn); // 將釘選按鈕加入
+                    btns.appendChild(editBtn); 
+                    btns.appendChild(delBtn);
+                    item.appendChild(titleWrap); 
+                    item.appendChild(btns);
                     list.appendChild(item);
                 });
             } catch (e) { console.error(e); }
+        }
+
+        // 🌟 新增：與後端溝通釘選狀態的函數
+        async function togglePinSession(id, currentPinnedStatus) {
+            try {
+                await fetch(GAS_URL, { 
+                    method: 'POST', 
+                    body: JSON.stringify({ 
+                        mode: 'system', 
+                        action: 'pin_session', 
+                        session_id: id, 
+                        is_pinned: !currentPinnedStatus // 傳送反轉後的狀態
+                    }) 
+                });
+                loadSessions(); // 重新載入列表以更新排序
+            } catch (e) { console.error('釘選失敗:', e); }
         }
 
         async function renameSession(id, old) {
