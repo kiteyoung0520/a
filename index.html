@@ -109,9 +109,8 @@
                     <div class="flex items-end gap-2 mt-1">
                         <button onclick="document.getElementById('file-upload').click()" class="p-3 text-gray-400 hover:text-white rounded-xl"><span class="material-symbols-rounded">attach_file</span></button>
                         <input type="file" id="file-upload" class="hidden" onchange="handleFileUpload(event)" accept="image/*,application/pdf,text/*">
-                        <textarea id="user-input" rows="1" placeholder="輸入指令或問題..." class="w-full bg-transparent border-none outline-none text-gray-100 py-3 px-2 resize-none max-h-60"></textarea>
+                        <textarea id="user-input" rows="1" placeholder="輸入指令、問題，或直接 Ctrl+V 貼上截圖..." class="w-full bg-transparent border-none outline-none text-gray-100 py-3 px-2 resize-none max-h-60"></textarea>
                         
-                        <!-- ✨ 按鈕移除直接寫死的 onclick，改由 JS 動態綁定 -->
                         <button id="send-btn" class="p-3 bg-white text-black rounded-xl hover:bg-gray-200 transition-all shadow-lg flex items-center justify-center">
                             <span class="material-symbols-rounded">send</span>
                         </button>
@@ -137,7 +136,6 @@
         let currentImageData = null, currentMimeType = null, currentDocumentText = null, currentDocumentName = null;
         let isWaiting = false, currentRenderCode = "";
         
-        // ✨ 新增：用於中斷請求的 API 控制器
         let abortController = null; 
 
         const chatContainer = document.getElementById('chat-container');
@@ -145,7 +143,6 @@
         const sendBtn = document.getElementById('send-btn');
         const sendBtnIcon = sendBtn.querySelector('.material-symbols-rounded');
 
-        // ✨ 新增：動態切換 發送/停止 按鈕的狀態
         function toggleSendButton(waiting) {
             isWaiting = waiting;
             if (waiting) {
@@ -161,13 +158,11 @@
             }
         }
         
-        // 預設綁定發送事件
         sendBtn.onclick = sendMessage;
 
-        // ✨ 新增：手動中斷生成的函數
         function stopGeneration() {
             if (abortController) {
-                abortController.abort(); // 送出中斷訊號給 fetch
+                abortController.abort();
                 abortController = null;
             }
         }
@@ -177,11 +172,49 @@
             this.style.height = (this.scrollHeight > 240 ? 240 : this.scrollHeight) + 'px';
         });
 
+        // ✨ 新增：智慧貼上攔截器 (防止 Base64 當機 & 支援截圖直貼)
+        userInput.addEventListener('paste', function(e) {
+            // 1. 處理實體檔案 (例如直接貼上螢幕截圖)
+            if (e.clipboardData && e.clipboardData.items) {
+                const items = e.clipboardData.items;
+                for (let i = 0; i < items.length; i++) {
+                    if (items[i].type.indexOf('image') !== -1) {
+                        e.preventDefault(); // 攔截預設貼上行為
+                        const file = items[i].getAsFile();
+                        const reader = new FileReader();
+                        reader.onload = (event) => {
+                            currentImageData = event.target.result;
+                            currentMimeType = file.type;
+                            document.getElementById('image-preview').src = currentImageData;
+                            document.getElementById('image-preview').classList.remove('hidden');
+                            document.getElementById('doc-preview').classList.add('hidden');
+                            document.getElementById('upload-preview-container').classList.remove('hidden');
+                        };
+                        reader.readAsDataURL(file);
+                        return; // 處理完圖片即退出
+                    }
+                }
+            }
+
+            // 2. 處理超長 Base64 文字 (防止瀏覽器當機)
+            const pasteText = (e.clipboardData || window.clipboardData).getData('text');
+            if (pasteText && pasteText.startsWith('data:image/')) {
+                e.preventDefault(); // 🌟 關鍵攔截：不讓幾百萬字的 Base64 進入輸入框！
+                currentImageData = pasteText;
+                const mimeMatch = pasteText.match(/data:(.*?);/);
+                currentMimeType = mimeMatch ? mimeMatch[1] : 'image/png';
+                
+                document.getElementById('image-preview').src = currentImageData;
+                document.getElementById('image-preview').classList.remove('hidden');
+                document.getElementById('doc-preview').classList.add('hidden');
+                document.getElementById('upload-preview-container').classList.remove('hidden');
+            }
+        });
+
         userInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
                 if (window.innerWidth < 768) return;
                 e.preventDefault();
-                // 若正在等待中按下 Enter，視同停止生成
                 if (isWaiting) stopGeneration(); 
                 else sendMessage();
             }
@@ -203,10 +236,9 @@
             const mime = currentMimeType;
             clearUpload();
 
-            toggleSendButton(true); // 🌟 將按鈕切換成紅色的「停止」
+            toggleSendButton(true); 
             const loadingId = appendLoading();
             
-            // 初始化控制器，準備監聽中斷
             abortController = new AbortController(); 
 
             try {
@@ -217,7 +249,7 @@
                         file_data: imgBase64, mime_type: mime,
                         web_search: isWebSearchEnabled 
                     }),
-                    signal: abortController.signal // 🌟 綁定中斷訊號
+                    signal: abortController.signal
                 });
                 const data = await response.json();
                 removeLoading(loadingId);
@@ -226,14 +258,13 @@
                 loadSessions(); 
             } catch (err) {
                 removeLoading(loadingId);
-                // 🌟 判斷是否為使用者手動中斷
                 if (err.name === 'AbortError') {
                     appendMessage('ai', `🛑 **生成已手動中止。**\n您可以隨時輸入新的指令。`);
                 } else {
                     appendMessage('ai', `❌ 執行失敗：\n\`\`\`text\n${err.message}\n\`\`\``);
                 }
             } finally { 
-                toggleSendButton(false); // 🌟 恢復成白色的「發送」按鈕
+                toggleSendButton(false); 
                 abortController = null;
             }
         }
@@ -304,7 +335,6 @@
             wrap.innerHTML = avatar + body;
             chatContainer.appendChild(wrap);
 
-            // 智慧偵測：JSX/HTML 預覽按鈕
             if (isAI) {
                 wrap.querySelectorAll('pre code').forEach(code => {
                     const lang = code.className;
