@@ -638,9 +638,11 @@
             try {
                 const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ mode: 'system', action: 'load_session', session_id: id }) });
                 const data = await res.json(); removeLoading(loadingId);
-                // ✨ 新增安全檢查：防止後端沒有回傳正確的陣列導致 forEach 崩潰
-                if (data && data.logs && Array.isArray(data.logs)) {
-                    data.logs.forEach(l => appendMessage(l.role === 'ai' ? 'ai' : 'user', l.text));
+                
+                // ✨ 容錯機制：防止後端沒有回傳正確的陣列
+                let logsData = data.logs || [];
+                if (Array.isArray(logsData)) {
+                    logsData.forEach(l => appendMessage(l.role === 'ai' ? 'ai' : 'user', l.text));
                 } else {
                     console.warn("未能載入對話內容:", data);
                 }
@@ -655,13 +657,18 @@
                 const list = document.getElementById('session-list');
                 list.innerHTML = '';
                 
-                // ✨ 新增安全檢查：防止後端沒有回傳正確的陣列導致 forEach 崩潰
-                if (!data || !data.sessions || !Array.isArray(data.sessions)) {
+                // ✨ 容錯機制：若後端被省略，避免 forEach 崩潰
+                let sessionsData = data.sessions || [];
+                if (!data.sessions && data.status === "success") {
+                    console.warn("⚠️ 提示：後端未回傳 sessions，請確認您的 GAS 程式碼中包含了完整的 handleSystemMode 函式實作。");
+                }
+                
+                if (!Array.isArray(sessionsData)) {
                     console.error("未能載入歷史對話清單:", data);
                     return;
                 }
 
-                data.sessions.forEach(s => {
+                sessionsData.forEach(s => {
                     const isActive = s.id === currentSessionId;
                     const isPinned = s.pinned;
                     const item = document.createElement('div');
@@ -682,7 +689,7 @@
                     item.querySelector('.del-btn').onclick = (e) => { e.stopPropagation(); deleteSession(s.id); };
                     list.appendChild(item);
                 });
-            } catch (e) { console.error(e); }
+            } catch (e) { console.error("loadSessions 發生例外錯誤:", e); }
         }
 
         async function togglePinSession(id, current) {
