@@ -2,11 +2,9 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <!-- ✨ 核心修復：加入 maximum-scale=1.0 和 user-scalable=no，防止 iOS 鍵盤彈出時強制放大導致跑版 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>anyGem - Super Agent v72.4 (Ultimate Edition)</title>
+    <title>anyGem - Super Agent v72.5 (Mobile UX Edition)</title>
     
-    <!-- ✨ 效能優化：預先連線 CDN 減少 DNS 解析時間 -->
     <link rel="preconnect" href="https://cdn.tailwindcss.com">
     <link rel="preconnect" href="https://cdn.jsdelivr.net">
     <link rel="preconnect" href="https://cdnjs.cloudflare.com">
@@ -22,7 +20,6 @@
         ::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
         ::-webkit-scrollbar-thumb:hover { background: #444; }
         
-        /* ✨ 核心修復：強化 Markdown 內文的換行處理，防止長網址把手機畫面撐破 */
         .prose { max-width: 100%; word-break: break-word; overflow-wrap: break-word; }
         .prose pre { background-color: #1e1e20; border-radius: 12px; padding: 1.25rem; overflow-x: auto; border: 1px solid #333; margin: 1rem 0; position: relative; max-width: 100%; }
         .prose code { color: #f87171; background-color: rgba(255,255,255,0.1); padding: 0.2rem 0.4rem; border-radius: 6px; font-size: 0.9em; font-family: 'Fira Code', monospace; }
@@ -56,9 +53,9 @@
         </div>
     </div>
 
-    <!-- ✨ 核心優化：側邊欄拖曳縮放 -->
-    <aside id="sidebar" class="bg-[#1e1f22] border-r border-[#333] flex flex-col transition-transform duration-300 z-30 absolute md:relative h-full -translate-x-full md:translate-x-0" style="width: 288px; min-width: 200px; max-width: 50vw;">
-        <!-- ✨ 拖曳縮放手柄 -->
+    <!-- ✨ 核心修復：拔除干擾的內聯樣式，改用 Tailwind 處理手機版 (w-[85vw] max-w-[340px]) 與桌面板 (md:w-[288px]) -->
+    <aside id="sidebar" class="bg-[#1e1f22] border-r border-[#333] flex flex-col transition-transform duration-300 z-30 absolute md:relative h-full -translate-x-full md:translate-x-0 w-[85vw] max-w-[340px] md:w-[288px] md:max-w-none shadow-2xl md:shadow-none" style="min-width: 200px;">
+        
         <div id="sidebar-resizer" class="hidden md:block absolute top-0 right-0 w-1.5 h-full cursor-col-resize hover:bg-blue-500/50 z-40 transition-colors"></div>
 
         <div class="p-6">
@@ -74,7 +71,6 @@
         </div>
         <div id="session-list" class="flex-1 overflow-y-auto px-3 space-y-1 pb-4"></div>
         
-        <!-- ✨ 擴充工具書籤區域 (支援折疊隱藏) -->
         <div class="px-3 pb-4 border-t border-[#333] pt-4 shrink-0">
             <button onclick="toggleBookmarks()" class="w-full flex items-center justify-between px-3 mb-1 group cursor-pointer outline-none hover:bg-[#2a2b2f] p-2 rounded-lg transition-colors">
                 <div class="flex items-center gap-2">
@@ -100,7 +96,7 @@
             </div>
         </div>
 
-        <div class="p-4 border-t border-[#333] text-xs text-gray-500 text-center font-mono shrink-0">v72.4 Ultimate Edition</div>
+        <div class="p-4 border-t border-[#333] text-xs text-gray-500 text-center font-mono shrink-0">v72.5 Mobile UX Edition</div>
     </aside>
 
     <main class="flex-1 flex flex-col relative bg-[#131314] overflow-hidden w-full">
@@ -131,7 +127,6 @@
                             <span id="doc-filename" class="text-xs sm:text-sm font-medium truncate max-w-[120px] sm:max-w-[150px]"></span>
                         </div>
 
-                        <!-- ✨ YouTube 預覽卡片 -->
                         <div id="youtube-preview" class="hidden flex items-center gap-2 sm:gap-3 bg-[#2a2b2f] p-2 pr-4 rounded-xl border border-[#444] shadow-lg">
                             <img id="yt-thumbnail" src="" class="h-10 w-16 sm:h-12 sm:w-20 object-cover rounded-lg border border-[#444]">
                             <div class="flex flex-col">
@@ -186,7 +181,6 @@
         });
 
         let currentSessionId = generateUUID();
-        // ✨ 新增 YouTube 狀態變數
         let currentImageData = null, currentMimeType = null, currentDocumentText = null, currentDocumentName = null, currentYouTubeId = null;
         let isWaiting = false, currentRenderCode = "";
         let abortController = null; 
@@ -196,7 +190,6 @@
         const sendBtn = document.getElementById('send-btn');
         const sendBtnIcon = sendBtn.querySelector('.material-symbols-rounded');
 
-        // ✨ 效能優化：Lazy Load PDF.js
         let pdfjsLibLoaded = false;
         async function loadPdfJs() {
             if (pdfjsLibLoaded) return;
@@ -213,7 +206,6 @@
             });
         }
 
-        // ✨ 效能優化：Lazy Load Mammoth (Word 引擎)
         let mammothLoaded = false;
         async function loadMammoth() {
             if (mammothLoaded) return;
@@ -226,7 +218,6 @@
             });
         }
 
-        // ✨ 效能優化：Lazy Load SheetJS (Excel 引擎)
         let xlsxLoaded = false;
         async function loadXlsx() {
             if (xlsxLoaded) return;
@@ -239,7 +230,7 @@
             });
         }
 
-        // ✨ 側邊欄縮放 (Resizer) 功能實作
+        // ✨ 修改：智慧處理桌面端與手機端的側邊欄調整
         const sidebarDom = document.getElementById('sidebar');
         const resizerDom = document.getElementById('sidebar-resizer');
         let isResizing = false;
@@ -247,13 +238,16 @@
         resizerDom.addEventListener('mousedown', (e) => {
             isResizing = true;
             document.body.style.cursor = 'col-resize';
-            document.body.style.userSelect = 'none'; // 防止拖曳時反白文字
+            document.body.style.userSelect = 'none'; 
         });
 
         document.addEventListener('mousemove', (e) => {
             if (!isResizing) return;
+            if (window.innerWidth < 768) {
+                isResizing = false; // 手機版不允許拖曳，由 CSS 處理
+                return;
+            }
             let newWidth = e.clientX;
-            // 限制縮放範圍: 最小 200px, 最大不超過螢幕寬度的 50%
             if (newWidth < 200) newWidth = 200;
             if (newWidth > window.innerWidth * 0.5) newWidth = window.innerWidth * 0.5;
             sidebarDom.style.width = newWidth + 'px';
@@ -267,7 +261,13 @@
             }
         });
 
-        // ✨ 書籤折疊功能
+        // ✨ 當視窗大小改變 (例如旋轉手機)，重置手動拖曳設定的寬度
+        window.addEventListener('resize', () => {
+            if (window.innerWidth < 768) {
+                sidebarDom.style.width = ''; 
+            }
+        });
+
         function toggleBookmarks() {
             const list = document.getElementById('bookmark-list');
             const chevron = document.getElementById('bookmark-chevron');
@@ -308,11 +308,9 @@
             this.style.height = (this.scrollHeight > 240 ? 240 : this.scrollHeight) + 'px';
         });
 
-        // ✨ 強化 Paste 事件：偵測 YouTube 網址
         userInput.addEventListener('paste', function(e) {
             const pasteText = (e.clipboardData || window.clipboardData).getData('text');
             
-            // 檢查是否為 YouTube 網址
             const ytRegex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i;
             const ytMatch = pasteText.match(ytRegex);
             
@@ -326,7 +324,6 @@
                 document.getElementById('doc-preview').classList.add('hidden');
                 document.getElementById('upload-preview-container').classList.remove('hidden');
                 
-                // 自動勾選聯網搜尋
                 document.getElementById('web-search-toggle').checked = true;
                 return;
             }
@@ -383,14 +380,12 @@
 
             const isWebSearchEnabled = document.getElementById('web-search-toggle').checked;
             
-            // ✨ 組裝對話顯示框的 UI 內容
             let displayMsg = text;
             if (currentDocumentName) displayMsg = `📎 [文件: ${currentDocumentName}]\n${text}`;
             if (currentYouTubeId) displayMsg = `📺 [YouTube 影片]\n${text}`;
             
             appendMessage('user', displayMsg, currentImageData);
             
-            // ✨ 組裝實際送給後端 AI 的 Payload
             let payloadText = text || "請分析此內容";
             if (currentDocumentText) {
                 payloadText = `【檔案：${currentDocumentName}】\n${currentDocumentText}\n\n指令：${payloadText}`;
@@ -401,7 +396,6 @@
             userInput.value = ''; userInput.style.height = 'auto';
             const imgBase64 = currentImageData ? currentImageData.split(',')[1] : null;
             const mime = currentMimeType;
-            // 暫存 youtube 變數後清空 UI
             const finalYoutubeId = currentYouTubeId; 
             clearUpload();
 
@@ -419,17 +413,14 @@
                         file_data: imgBase64, 
                         mime_type: mime,
                         web_search: isWebSearchEnabled,
-                        youtube_id: finalYoutubeId // ✨ 精準傳遞給後端強制觸發解析器
+                        youtube_id: finalYoutubeId
                     }),
                     signal: abortController.signal
                 });
                 const data = await response.json();
                 removeLoading(loadingId);
                 
-                // Add check to ensure we get a valid response with AI text
                 if (data.status === "error") throw new Error(data.error || "伺服器發生未知錯誤");
-                
-                // Only append AI message if there is actual reply text, or if it's not a success response that we're misinterpreting
                 if (data.reply) {
                    appendMessage('ai', data.reply, data.image ? `data:${data.mime};base64,${data.image}` : null, data.model);
                 }
@@ -517,8 +508,6 @@
                             workbook.SheetNames.forEach(sheetName => {
                                 text += `\n--- 表單: ${sheetName} ---\n`;
                                 let csvData = XLSX.utils.sheet_to_csv(workbook.Sheets[sheetName]);
-                                
-                                // ✨ 解除限制：放寬至 50萬 字元 (約對應 Gemini 10~15 萬 Token)
                                 const CHAR_LIMIT = 500000;
                                 if (csvData.length > CHAR_LIMIT) {
                                     text += csvData.substring(0, CHAR_LIMIT) + "\n\n...[⚠️ 檔案極大，已自動截斷最後部分以保護系統與節省 Token]...";
@@ -645,12 +634,9 @@
                 const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ mode: 'system', action: 'load_session', session_id: id }) });
                 const data = await res.json(); removeLoading(loadingId);
                 
-                // ✨ 容錯機制：防止後端沒有回傳正確的陣列
                 let logsData = data.logs || [];
                 if (Array.isArray(logsData)) {
                     logsData.forEach(l => appendMessage(l.role === 'ai' ? 'ai' : 'user', l.text));
-                } else {
-                    console.warn("未能載入對話內容:", data);
                 }
                 loadSessions();
             } catch (e) { console.error(e); }
@@ -663,14 +649,11 @@
                 const list = document.getElementById('session-list');
                 list.innerHTML = '';
                 
-                // ✨ 容錯與安全檢查
-                // If it's a success response from something else, don't throw an error, just return.
                 if (data && data.status === "success" && !data.sessions) {
                      return;
                 }
 
                 if (!data || !data.sessions || !Array.isArray(data.sessions)) {
-                    console.error("未能載入歷史對話清單, 後端回傳格式不正確:", data);
                     return;
                 }
 
@@ -680,14 +663,16 @@
                     const item = document.createElement('div');
                     item.className = `group flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all ${isActive ? 'active-session' : 'text-gray-400 hover:bg-[#2a2b2f] hover:text-white'}`;
                     const iconName = isPinned ? 'push_pin' : (isActive ? 'chat_bubble' : 'chat');
+                    
+                    // ✨ 修改：在手機版時 (`md:opacity-0` 變為 `md:`) 也能正確排列按鈕
                     item.innerHTML = `<div class="flex items-center gap-3 truncate flex-1 min-w-0">
                         <span class="material-symbols-rounded text-lg shrink-0 ${isPinned ? 'pinned-icon' : ''}">${iconName}</span>
-                        <span class="truncate text-sm">${s.title}</span>
+                        <span class="truncate text-sm font-medium tracking-wide">${s.title}</span>
                     </div>
-                    <div class="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 shrink-0 ml-2">
-                        <button class="p-1 pin-btn ${isPinned ? 'text-blue-500' : ''}"><span class="material-symbols-rounded text-sm">push_pin</span></button>
-                        <button class="p-1 edit-btn"><span class="material-symbols-rounded text-sm">edit</span></button>
-                        <button class="p-1 del-btn hover:text-red-400"><span class="material-symbols-rounded text-sm">delete</span></button>
+                    <div class="flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 shrink-0 ml-2 transition-opacity">
+                        <button class="p-1 pin-btn ${isPinned ? 'text-blue-500' : ''} hover:bg-[#333] rounded-md transition-colors"><span class="material-symbols-rounded text-[16px]">push_pin</span></button>
+                        <button class="p-1 edit-btn hover:text-blue-400 hover:bg-[#333] rounded-md transition-colors"><span class="material-symbols-rounded text-[16px]">edit</span></button>
+                        <button class="p-1 del-btn hover:text-red-400 hover:bg-[#333] rounded-md transition-colors"><span class="material-symbols-rounded text-[16px]">delete</span></button>
                     </div>`;
                     item.onclick = () => switchSession(s.id, s.title);
                     item.querySelector('.pin-btn').onclick = (e) => { e.stopPropagation(); togglePinSession(s.id, isPinned); };
@@ -695,7 +680,7 @@
                     item.querySelector('.del-btn').onclick = (e) => { e.stopPropagation(); deleteSession(s.id); };
                     list.appendChild(item);
                 });
-            } catch (e) { console.error("loadSessions 發生例外錯誤:", e); }
+            } catch (e) {}
         }
 
         async function togglePinSession(id, current) {
