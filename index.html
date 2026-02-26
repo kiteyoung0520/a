@@ -425,8 +425,14 @@
                 });
                 const data = await response.json();
                 removeLoading(loadingId);
-                if (data.status === "error") throw new Error(data.error);
-                appendMessage('ai', data.reply, data.image ? `data:${data.mime};base64,${data.image}` : null, data.model);
+                
+                // Add check to ensure we get a valid response with AI text
+                if (data.status === "error") throw new Error(data.error || "伺服器發生未知錯誤");
+                
+                // Only append AI message if there is actual reply text, or if it's not a success response that we're misinterpreting
+                if (data.reply) {
+                   appendMessage('ai', data.reply, data.image ? `data:${data.mime};base64,${data.image}` : null, data.model);
+                }
                 loadSessions(); 
             } catch (err) {
                 removeLoading(loadingId);
@@ -512,7 +518,7 @@
                                 text += `\n--- 表單: ${sheetName} ---\n`;
                                 let csvData = XLSX.utils.sheet_to_csv(workbook.Sheets[sheetName]);
                                 
-                                // ✨ 解除限制：放寬至 50萬 字元 (約對應 Gemini 10~15 萬 Token)，完美容納 900+ 行
+                                // ✨ 解除限制：放寬至 50萬 字元 (約對應 Gemini 10~15 萬 Token)
                                 const CHAR_LIMIT = 500000;
                                 if (csvData.length > CHAR_LIMIT) {
                                     text += csvData.substring(0, CHAR_LIMIT) + "\n\n...[⚠️ 檔案極大，已自動截斷最後部分以保護系統與節省 Token]...";
@@ -657,18 +663,18 @@
                 const list = document.getElementById('session-list');
                 list.innerHTML = '';
                 
-                // ✨ 容錯機制：若後端被省略，避免 forEach 崩潰
-                let sessionsData = data.sessions || [];
-                if (!data.sessions && data.status === "success") {
-                    console.warn("⚠️ 提示：後端未回傳 sessions，請確認您的 GAS 程式碼中包含了完整的 handleSystemMode 函式實作。");
+                // ✨ 容錯與安全檢查
+                // If it's a success response from something else, don't throw an error, just return.
+                if (data && data.status === "success" && !data.sessions) {
+                     return;
                 }
-                
-                if (!Array.isArray(sessionsData)) {
-                    console.error("未能載入歷史對話清單:", data);
+
+                if (!data || !data.sessions || !Array.isArray(data.sessions)) {
+                    console.error("未能載入歷史對話清單, 後端回傳格式不正確:", data);
                     return;
                 }
 
-                sessionsData.forEach(s => {
+                data.sessions.forEach(s => {
                     const isActive = s.id === currentSessionId;
                     const isPinned = s.pinned;
                     const item = document.createElement('div');
