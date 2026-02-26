@@ -58,7 +58,11 @@
         </div>
     </div>
 
-    <aside id="sidebar" class="w-72 bg-[#1e1f22] border-r border-[#333] flex flex-col transition-all duration-300 z-30 absolute md:relative h-full -translate-x-full md:translate-x-0">
+    <!-- ✨ 核心優化：將 w-72 替換為 inline style，並將 transition-all 改為 transition-transform 防止拖曳卡頓 -->
+    <aside id="sidebar" class="bg-[#1e1f22] border-r border-[#333] flex flex-col transition-transform duration-300 z-30 absolute md:relative h-full -translate-x-full md:translate-x-0" style="width: 288px; min-width: 200px; max-width: 50vw;">
+        <!-- ✨ 拖曳縮放手柄 -->
+        <div id="sidebar-resizer" class="hidden md:block absolute top-0 right-0 w-1.5 h-full cursor-col-resize hover:bg-blue-500/50 z-40 transition-colors"></div>
+
         <div class="p-6">
             <div class="flex items-center gap-3 mb-8">
                 <div class="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
@@ -72,10 +76,17 @@
         </div>
         <div id="session-list" class="flex-1 overflow-y-auto px-3 space-y-1 pb-4"></div>
         
-        <!-- ✨ 擴充工具書籤區域 (固定於側邊欄底部) -->
+        <!-- ✨ 擴充工具書籤區域 (支援折疊隱藏) -->
         <div class="px-3 pb-4 border-t border-[#333] pt-4 shrink-0">
-            <div class="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-2 px-3">外部工具 (Tools)</div>
-            <div class="space-y-1">
+            <button onclick="toggleBookmarks()" class="w-full flex items-center justify-between px-3 mb-1 group cursor-pointer outline-none hover:bg-[#2a2b2f] p-2 rounded-lg transition-colors">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-rounded text-gray-500 text-[16px] group-hover:text-blue-400 transition-colors">bookmarks</span>
+                    <span class="text-[11px] font-bold text-gray-400 uppercase tracking-wider group-hover:text-white transition-colors">外部工具 (Tools)</span>
+                </div>
+                <span id="bookmark-chevron" class="material-symbols-rounded text-gray-500 text-sm transition-transform duration-200">expand_more</span>
+            </button>
+            
+            <div id="bookmark-list" class="space-y-1 hidden mt-2">
                 <a href="https://kiteyoung8.github.io/panter/" target="_blank" class="flex items-center gap-3 p-3 rounded-xl text-gray-400 hover:bg-[#2a2b2f] hover:text-white transition-all group">
                     <span class="material-symbols-rounded text-lg shrink-0 group-hover:text-pink-400 transition-colors">palette</span>
                     <span class="truncate text-sm">繪圖引擎</span>
@@ -196,6 +207,46 @@
                 script.onerror = reject;
                 document.head.appendChild(script);
             });
+        }
+
+        // ✨ 側邊欄縮放 (Resizer) 功能實作
+        const sidebarDom = document.getElementById('sidebar');
+        const resizerDom = document.getElementById('sidebar-resizer');
+        let isResizing = false;
+
+        resizerDom.addEventListener('mousedown', (e) => {
+            isResizing = true;
+            document.body.style.cursor = 'col-resize';
+            document.body.style.userSelect = 'none'; // 防止拖曳時反白文字
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isResizing) return;
+            let newWidth = e.clientX;
+            // 限制縮放範圍: 最小 200px, 最大不超過螢幕寬度的 50%
+            if (newWidth < 200) newWidth = 200;
+            if (newWidth > window.innerWidth * 0.5) newWidth = window.innerWidth * 0.5;
+            sidebarDom.style.width = newWidth + 'px';
+        });
+
+        document.addEventListener('mouseup', () => {
+            if (isResizing) {
+                isResizing = false;
+                document.body.style.cursor = '';
+                document.body.style.userSelect = '';
+            }
+        });
+
+        // ✨ 書籤折疊功能
+        function toggleBookmarks() {
+            const list = document.getElementById('bookmark-list');
+            const chevron = document.getElementById('bookmark-chevron');
+            list.classList.toggle('hidden');
+            if (list.classList.contains('hidden')) {
+                chevron.style.transform = 'rotate(0deg)';
+            } else {
+                chevron.style.transform = 'rotate(180deg)';
+            }
         }
 
         function toggleSendButton(waiting) {
