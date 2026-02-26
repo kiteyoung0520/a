@@ -468,9 +468,15 @@
                             let text = "";
                             workbook.SheetNames.forEach(sheetName => {
                                 text += `\n--- 表單: ${sheetName} ---\n`;
-                                // ✨ 記憶體防爆：只讀取轉換後的文字，避免過大的表單讓 AI Token 溢出
                                 let csvData = XLSX.utils.sheet_to_csv(workbook.Sheets[sheetName]);
-                                text += csvData.substring(0, 10000); 
+                                
+                                // ✨ 解除限制：放寬至 50萬 字元 (約對應 Gemini 10~15 萬 Token)，完美容納 900+ 行
+                                const CHAR_LIMIT = 500000;
+                                if (csvData.length > CHAR_LIMIT) {
+                                    text += csvData.substring(0, CHAR_LIMIT) + "\n\n...[⚠️ 檔案極大，已自動截斷最後部分以保護系統與節省 Token]...";
+                                } else {
+                                    text += csvData;
+                                }
                             });
                             setDocPayload(file.name, text);
                         } catch(err) {
