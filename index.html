@@ -4,14 +4,19 @@
     <meta charset="UTF-8">
     <!-- ✨ 核心修復：加入 maximum-scale=1.0 和 user-scalable=no，防止 iOS 鍵盤彈出時強制放大導致跑版 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>anyGem - Super Agent v72.1 (Mobile Optimized)</title>
+    <title>anyGem - Super Agent v72.3 (Performance Optimized)</title>
+    
+    <!-- ✨ 效能優化：預先連線 CDN 減少 DNS 解析時間 -->
+    <link rel="preconnect" href="https://cdn.tailwindcss.com">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0" />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-    <script>
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-    </script>
+    
+    <!-- ⚠️ 效能優化：已移除同步載入的 pdf.js，改為下方動態載入，大幅提升首次網頁開啟速度 -->
+    
     <style>
         body { background-color: #131314; color: #e3e3e3; font-family: 'Inter', system-ui, -apple-system, sans-serif; }
         ::-webkit-scrollbar { width: 6px; }
@@ -66,7 +71,7 @@
             </button>
         </div>
         <div id="session-list" class="flex-1 overflow-y-auto px-3 space-y-1 pb-4"></div>
-        <div class="p-4 border-t border-[#333] text-xs text-gray-500 text-center font-mono">v72.1 Mobile Edition</div>
+        <div class="p-4 border-t border-[#333] text-xs text-gray-500 text-center font-mono">v72.3 Performance Edition</div>
     </aside>
 
     <main class="flex-1 flex flex-col relative bg-[#131314] overflow-hidden w-full">
@@ -155,6 +160,23 @@
         const userInput = document.getElementById('user-input');
         const sendBtn = document.getElementById('send-btn');
         const sendBtnIcon = sendBtn.querySelector('.material-symbols-rounded');
+
+        // ✨ 效能優化：Lazy Load PDF.js (減少網頁初始載入負擔)
+        let pdfjsLibLoaded = false;
+        async function loadPdfJs() {
+            if (pdfjsLibLoaded) return;
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
+                script.onload = () => {
+                    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+                    pdfjsLibLoaded = true;
+                    resolve();
+                };
+                script.onerror = reject;
+                document.head.appendChild(script);
+            });
+        }
 
         function toggleSendButton(waiting) {
             isWaiting = waiting;
@@ -283,6 +305,7 @@
             const file = event.target.files[0];
             if (!file) return;
             const reader = new FileReader();
+            
             if (file.type.startsWith('image/')) {
                 reader.onload = (e) => {
                     currentImageData = e.target.result; currentMimeType = file.type;
@@ -293,17 +316,31 @@
                 };
                 reader.readAsDataURL(file);
             } else if (file.type === 'application/pdf') {
-                reader.onload = async (e) => {
-                    const pdf = await pdfjsLib.getDocument(new Uint8Array(e.target.result)).promise;
-                    let text = "";
-                    for (let i = 1; i <= pdf.numPages; i++) {
-                        const page = await pdf.getPage(i);
-                        const content = await page.getTextContent();
-                        text += content.items.map(s => s.str).join(' ') + "\n";
-                    }
-                    setDocPayload(file.name, text);
-                };
-                reader.readAsArrayBuffer(file);
+                // ✨ 效能優化：在此處才載入 PDF 解析引擎
+                const loadingId = appendLoading();
+                try {
+                    await loadPdfJs();
+                    reader.onload = async (e) => {
+                        try {
+                            const pdf = await pdfjsLib.getDocument(new Uint8Array(e.target.result)).promise;
+                            let text = "";
+                            for (let i = 1; i <= pdf.numPages; i++) {
+                                const page = await pdf.getPage(i);
+                                const content = await page.getTextContent();
+                                text += content.items.map(s => s.str).join(' ') + "\n";
+                            }
+                            setDocPayload(file.name, text);
+                        } catch (err) {
+                            alert("PDF 解析失敗");
+                        } finally {
+                            removeLoading(loadingId);
+                        }
+                    };
+                    reader.readAsArrayBuffer(file);
+                } catch (err) {
+                    removeLoading(loadingId);
+                    alert("載入 PDF 引擎失敗，請檢查網路連線。");
+                }
             } else {
                 reader.onload = (e) => setDocPayload(file.name, e.target.result);
                 reader.readAsText(file);
@@ -462,6 +499,7 @@
             }
         }
 
+        // ✨ 效能優化：預覽器的 React 改採用 production 壓縮版，提升渲染速度
         function openPreview(code) {
             let renderCode = code;
             const isReact = code.includes('export default') || code.includes('import React') || code.includes('className=');
@@ -477,8 +515,8 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="https://unpkg.com/react@18/umd/react.development.js"><\/script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"><\/script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"><\/script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"><\/script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"><\/script>
     <script src="https://cdn.tailwindcss.com"><\/script>
     <script src="https://unpkg.com/lucide@latest"><\/script>
@@ -517,5 +555,3 @@
     </script>
 </body>
 </html>
-
-
