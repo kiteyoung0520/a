@@ -129,10 +129,21 @@
                 <div id="upload-preview-container" class="hidden flex gap-3 mb-3 px-2">
                     <div class="relative group">
                         <img id="image-preview" class="hidden h-16 w-16 sm:h-20 sm:w-20 object-cover rounded-xl border-2 border-blue-500/50 shadow-lg">
+                        
                         <div id="doc-preview" class="hidden flex items-center gap-2 sm:gap-3 bg-[#2a2b2f] p-3 sm:p-4 rounded-xl border border-[#444] shadow-lg">
                             <span class="material-symbols-rounded text-blue-400 text-xl sm:text-2xl">description</span>
                             <span id="doc-filename" class="text-xs sm:text-sm font-medium truncate max-w-[120px] sm:max-w-[150px]"></span>
                         </div>
+
+                        <!-- ✨ YouTube 預覽卡片 -->
+                        <div id="youtube-preview" class="hidden flex items-center gap-2 sm:gap-3 bg-[#2a2b2f] p-2 pr-4 rounded-xl border border-[#444] shadow-lg">
+                            <img id="yt-thumbnail" src="" class="h-10 w-16 sm:h-12 sm:w-20 object-cover rounded-lg border border-[#444]">
+                            <div class="flex flex-col">
+                                <span class="text-[10px] text-red-400 font-bold uppercase tracking-wider">YouTube</span>
+                                <span class="text-xs sm:text-sm font-medium text-gray-200">影片連結已載入</span>
+                            </div>
+                        </div>
+
                         <button onclick="clearUpload()" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md"><span class="material-symbols-rounded text-[14px] block">close</span></button>
                     </div>
                 </div>
@@ -155,7 +166,7 @@
                         <input type="file" id="file-upload" class="hidden" onchange="handleFileUpload(event)" accept="image/*,application/pdf,text/*,.docx,.xlsx,.csv">
                         
                         <!-- ✨ 核心修復：確保字體為 text-base (16px)，這是防止 iOS 自動放大的終極保證 -->
-                        <textarea id="user-input" rows="1" placeholder="輸入指令或貼上截圖..." class="w-full bg-transparent border-none outline-none text-gray-100 py-2.5 sm:py-3 px-1 sm:px-2 resize-none max-h-32 sm:max-h-60 text-base leading-relaxed"></textarea>
+                        <textarea id="user-input" rows="1" placeholder="輸入指令或貼上 YouTube 網址..." class="w-full bg-transparent border-none outline-none text-gray-100 py-2.5 sm:py-3 px-1 sm:px-2 resize-none max-h-32 sm:max-h-60 text-base leading-relaxed"></textarea>
                         
                         <!-- ✨ 核心修復：加入 shrink-0 -->
                         <button id="send-btn" class="p-2.5 sm:p-3 shrink-0 bg-white text-black rounded-xl hover:bg-gray-200 transition-all shadow-md flex items-center justify-center">
@@ -183,7 +194,8 @@
         });
 
         let currentSessionId = generateUUID();
-        let currentImageData = null, currentMimeType = null, currentDocumentText = null, currentDocumentName = null;
+        // ✨ 新增 YouTube 狀態變數
+        let currentImageData = null, currentMimeType = null, currentDocumentText = null, currentDocumentName = null, currentYouTubeId = null;
         let isWaiting = false, currentRenderCode = "";
         let abortController = null; 
 
@@ -192,7 +204,7 @@
         const sendBtn = document.getElementById('send-btn');
         const sendBtnIcon = sendBtn.querySelector('.material-symbols-rounded');
 
-        // ✨ 效能優化：Lazy Load PDF.js (減少網頁初始載入負擔)
+        // ✨ 效能優化：Lazy Load PDF.js
         let pdfjsLibLoaded = false;
         async function loadPdfJs() {
             if (pdfjsLibLoaded) return;
@@ -304,7 +316,29 @@
             this.style.height = (this.scrollHeight > 240 ? 240 : this.scrollHeight) + 'px';
         });
 
+        // ✨ 強化 Paste 事件：偵測 YouTube 網址
         userInput.addEventListener('paste', function(e) {
+            const pasteText = (e.clipboardData || window.clipboardData).getData('text');
+            
+            // 檢查是否為 YouTube 網址
+            const ytRegex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i;
+            const ytMatch = pasteText.match(ytRegex);
+            
+            if (ytMatch && ytMatch[1]) {
+                e.preventDefault(); 
+                currentYouTubeId = ytMatch[1];
+                document.getElementById('yt-thumbnail').src = `https://img.youtube.com/vi/${currentYouTubeId}/mqdefault.jpg`;
+                
+                document.getElementById('youtube-preview').classList.remove('hidden');
+                document.getElementById('image-preview').classList.add('hidden');
+                document.getElementById('doc-preview').classList.add('hidden');
+                document.getElementById('upload-preview-container').classList.remove('hidden');
+                
+                // 自動勾選聯網搜尋 (提升 Gemini 原生解析機率)
+                document.getElementById('web-search-toggle').checked = true;
+                return;
+            }
+
             if (e.clipboardData && e.clipboardData.items) {
                 const items = e.clipboardData.items;
                 for (let i = 0; i < items.length; i++) {
@@ -318,6 +352,7 @@
                             document.getElementById('image-preview').src = currentImageData;
                             document.getElementById('image-preview').classList.remove('hidden');
                             document.getElementById('doc-preview').classList.add('hidden');
+                            document.getElementById('youtube-preview').classList.add('hidden');
                             document.getElementById('upload-preview-container').classList.remove('hidden');
                         };
                         reader.readAsDataURL(file);
@@ -326,7 +361,6 @@
                 }
             }
 
-            const pasteText = (e.clipboardData || window.clipboardData).getData('text');
             if (pasteText && pasteText.startsWith('data:image/')) {
                 e.preventDefault(); 
                 currentImageData = pasteText;
@@ -336,6 +370,7 @@
                 document.getElementById('image-preview').src = currentImageData;
                 document.getElementById('image-preview').classList.remove('hidden');
                 document.getElementById('doc-preview').classList.add('hidden');
+                document.getElementById('youtube-preview').classList.add('hidden');
                 document.getElementById('upload-preview-container').classList.remove('hidden');
             }
         });
@@ -351,14 +386,25 @@
 
         async function sendMessage() {
             const text = userInput.value.trim();
-            if (!text && !currentImageData && !currentDocumentText) return;
+            if (!text && !currentImageData && !currentDocumentText && !currentYouTubeId) return;
             if (isWaiting) return;
 
             const isWebSearchEnabled = document.getElementById('web-search-toggle').checked;
-            appendMessage('user', currentDocumentName ? `📎 [文件: ${currentDocumentName}]\n${text}` : text, currentImageData);
             
+            // ✨ 組裝對話顯示框的 UI 內容
+            let displayMsg = text;
+            if (currentDocumentName) displayMsg = `📎 [文件: ${currentDocumentName}]\n${text}`;
+            if (currentYouTubeId) displayMsg = `📺 [YouTube 影片]\n${text}`;
+            
+            appendMessage('user', displayMsg, currentImageData);
+            
+            // ✨ 組裝實際送給後端 AI 的 Payload
             let payloadText = text || "請分析此內容";
-            if (currentDocumentText) payloadText = `【檔案：${currentDocumentName}】\n${currentDocumentText}\n\n指令：${payloadText}`;
+            if (currentDocumentText) {
+                payloadText = `【檔案：${currentDocumentName}】\n${currentDocumentText}\n\n指令：${payloadText}`;
+            } else if (currentYouTubeId) {
+                payloadText = `【指定 YouTube 影片】：https://www.youtube.com/watch?v=${currentYouTubeId}\n\n指令：${payloadText}`;
+            }
 
             userInput.value = ''; userInput.style.height = 'auto';
             const imgBase64 = currentImageData ? currentImageData.split(',')[1] : null;
@@ -410,6 +456,7 @@
                     document.getElementById('image-preview').src = currentImageData;
                     document.getElementById('image-preview').classList.remove('hidden');
                     document.getElementById('doc-preview').classList.add('hidden');
+                    document.getElementById('youtube-preview').classList.add('hidden');
                     document.getElementById('upload-preview-container').classList.remove('hidden');
                 };
                 reader.readAsDataURL(file);
@@ -501,12 +548,14 @@
             document.getElementById('doc-filename').innerText = name;
             document.getElementById('doc-preview').classList.remove('hidden');
             document.getElementById('image-preview').classList.add('hidden');
+            document.getElementById('youtube-preview').classList.add('hidden');
             document.getElementById('upload-preview-container').classList.remove('hidden');
         }
 
         function clearUpload() {
-            currentImageData = null; currentDocumentText = null; currentDocumentName = null;
+            currentImageData = null; currentDocumentText = null; currentDocumentName = null; currentYouTubeId = null;
             document.getElementById('upload-preview-container').classList.add('hidden');
+            document.getElementById('youtube-preview').classList.add('hidden');
             document.getElementById('file-upload').value = '';
         }
 
