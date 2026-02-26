@@ -152,7 +152,7 @@
                     <div class="flex items-end gap-1 sm:gap-2 mt-1">
                         <!-- ✨ 核心修復：加入 shrink-0 確保按鈕不會被壓扁 -->
                         <button onclick="document.getElementById('file-upload').click()" class="p-2 sm:p-3 shrink-0 text-gray-400 hover:text-white rounded-xl transition-colors"><span class="material-symbols-rounded block">attach_file</span></button>
-                        <input type="file" id="file-upload" class="hidden" onchange="handleFileUpload(event)" accept="image/*,application/pdf,text/*">
+                        <input type="file" id="file-upload" class="hidden" onchange="handleFileUpload(event)" accept="image/*,application/pdf,text/*,.docx,.xlsx,.csv">
                         
                         <!-- ✨ 核心修復：確保字體為 text-base (16px)，這是防止 iOS 自動放大的終極保證 -->
                         <textarea id="user-input" rows="1" placeholder="輸入指令或貼上截圖..." class="w-full bg-transparent border-none outline-none text-gray-100 py-2.5 sm:py-3 px-1 sm:px-2 resize-none max-h-32 sm:max-h-60 text-base leading-relaxed"></textarea>
@@ -204,6 +204,32 @@
                     pdfjsLibLoaded = true;
                     resolve();
                 };
+                script.onerror = reject;
+                document.head.appendChild(script);
+            });
+        }
+
+        // ✨ 效能優化：Lazy Load Mammoth (Word 引擎)
+        let mammothLoaded = false;
+        async function loadMammoth() {
+            if (mammothLoaded) return;
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = "https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js";
+                script.onload = () => { mammothLoaded = true; resolve(); };
+                script.onerror = reject;
+                document.head.appendChild(script);
+            });
+        }
+
+        // ✨ 效能優化：Lazy Load SheetJS (Excel 引擎)
+        let xlsxLoaded = false;
+        async function loadXlsx() {
+            if (xlsxLoaded) return;
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
+                script.onload = () => { xlsxLoaded = true; resolve(); };
                 script.onerror = reject;
                 document.head.appendChild(script);
             });
@@ -376,6 +402,7 @@
             const file = event.target.files[0];
             if (!file) return;
             const reader = new FileReader();
+            const ext = file.name.split('.').pop().toLowerCase();
             
             if (file.type.startsWith('image/')) {
                 reader.onload = (e) => {
@@ -386,8 +413,7 @@
                     document.getElementById('upload-preview-container').classList.remove('hidden');
                 };
                 reader.readAsDataURL(file);
-            } else if (file.type === 'application/pdf') {
-                // ✨ 效能優化：在此處才載入 PDF 解析引擎
+            } else if (file.type === 'application/pdf' || ext === 'pdf') {
                 const loadingId = appendLoading();
                 try {
                     await loadPdfJs();
@@ -412,7 +438,53 @@
                     removeLoading(loadingId);
                     alert("載入 PDF 引擎失敗，請檢查網路連線。");
                 }
+            } else if (ext === 'docx') {
+                // 讀取 Word
+                const loadingId = appendLoading();
+                try {
+                    await loadMammoth();
+                    reader.onload = async (e) => {
+                        try {
+                            const result = await mammoth.extractRawText({ arrayBuffer: e.target.result });
+                            setDocPayload(file.name, result.value);
+                        } catch(err) {
+                            alert("Word 解析失敗");
+                        } finally {
+                            removeLoading(loadingId);
+                        }
+                    };
+                    reader.readAsArrayBuffer(file);
+                } catch (err) {
+                    removeLoading(loadingId); alert("載入 Word 引擎失敗。");
+                }
+            } else if (ext === 'xlsx' || ext === 'csv') {
+                // 讀取 Excel / CSV
+                const loadingId = appendLoading();
+                try {
+                    await loadXlsx();
+                    reader.onload = (e) => {
+                        try {
+                            const workbook = XLSX.read(e.target.result, { type: 'array' });
+                            let text = "";
+                            workbook.SheetNames.forEach(sheetName => {
+                                text += `\n--- 表單: ${sheetName} ---\n`;
+                                // ✨ 記憶體防爆：只讀取轉換後的文字，避免過大的表單讓 AI Token 溢出
+                                let csvData = XLSX.utils.sheet_to_csv(workbook.Sheets[sheetName]);
+                                text += csvData.substring(0, 10000); 
+                            });
+                            setDocPayload(file.name, text);
+                        } catch(err) {
+                            alert("Excel 解析失敗");
+                        } finally {
+                            removeLoading(loadingId);
+                        }
+                    };
+                    reader.readAsArrayBuffer(file);
+                } catch (err) {
+                    removeLoading(loadingId); alert("載入 Excel 引擎失敗。");
+                }
             } else {
+                // 讀取一般純文字 (TXT, JSON, MD 等)
                 reader.onload = (e) => setDocPayload(file.name, e.target.result);
                 reader.readAsText(file);
             }
