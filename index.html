@@ -3,14 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>anyGem - Super Agent v72.6 (Link Fixed Edition)</title>
+    <title>anyGem - Super Agent v73.0 (Auto-Image Edition)</title>
     
     <link rel="preconnect" href="https://cdn.tailwindcss.com">
     <link rel="preconnect" href="https://cdn.jsdelivr.net">
     <link rel="preconnect" href="https://cdnjs.cloudflare.com">
 
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- ✨ 核心修復 1：鎖定 marked 的穩定版本，防止 API 突變 -->
     <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0" />
     
@@ -95,7 +94,7 @@
             </div>
         </div>
 
-        <div class="p-4 border-t border-[#333] text-xs text-gray-500 text-center font-mono shrink-0">v72.6 Link Fixed Edition</div>
+        <div class="p-4 border-t border-[#333] text-xs text-gray-500 text-center font-mono shrink-0">v73.0 Auto-Image Edition</div>
     </aside>
 
     <main class="flex-1 flex flex-col relative bg-[#131314] overflow-hidden w-full">
@@ -139,7 +138,9 @@
                 </div>
 
                 <div class="bg-[#1e1f22] rounded-2xl border border-[#333] shadow-[0_-10px_40px_rgba(0,0,0,0.5)] focus-within:border-blue-500 transition-all p-1.5 sm:p-2 mx-1 sm:mx-0">
-                    <div class="flex items-center gap-2 px-2 sm:px-3 mb-1 sm:mb-2 pt-1 border-b border-[#333] pb-1.5 sm:pb-2">
+                    <div class="flex items-center gap-4 px-2 sm:px-3 mb-1 sm:mb-2 pt-1 border-b border-[#333] pb-1.5 sm:pb-2">
+                        
+                        <!-- 連網搜尋開關 -->
                         <label class="relative inline-flex items-center cursor-pointer">
                             <input type="checkbox" id="web-search-toggle" class="sr-only peer">
                             <div class="w-8 h-4 bg-gray-600 rounded-full peer peer-checked:bg-blue-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:after:translate-x-full"></div>
@@ -147,6 +148,16 @@
                                 <span class="material-symbols-rounded text-[14px] sm:text-sm">language</span> 連網搜尋
                             </span>
                         </label>
+
+                        <!-- ✨ 新增：自動配圖開關 -->
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="auto-image-toggle" class="sr-only peer">
+                            <div class="w-8 h-4 bg-gray-600 rounded-full peer peer-checked:bg-pink-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:after:translate-x-full"></div>
+                            <span class="ml-2 text-xs font-medium text-gray-400 peer-checked:text-pink-400 flex items-center gap-1">
+                                <span class="material-symbols-rounded text-[14px] sm:text-sm">imagesmode</span> 簡報自動配圖
+                            </span>
+                        </label>
+
                     </div>
                     
                     <div class="flex items-end gap-1 sm:gap-2 mt-1">
@@ -169,13 +180,10 @@
     <script>
         const GAS_URL = "https://script.google.com/macros/s/AKfycbwsng4RBCTX67my46U4fv7BhDYT0CIZt95dL7DNCFJTGUJLZFd_854vRGeUsQ1_BjG9/exec";
 
-        // ✨ 核心修復 2：無敵相容版的超連結渲染器，確保不會再出現 [object Object] 或 undefined
         marked.use({
             renderer: {
                 link(hrefOrToken, title, text) {
                     let linkHref, linkTitle, linkText;
-                    
-                    // 判斷是否為 marked v13+ 的 Token 物件
                     if (typeof hrefOrToken === 'object' && hrefOrToken !== null) {
                         linkHref = hrefOrToken.href;
                         linkTitle = hrefOrToken.title;
@@ -185,7 +193,6 @@
                         linkTitle = title;
                         linkText = text;
                     }
-                    
                     const titleAttr = linkTitle ? `title="${linkTitle}"` : '';
                     return `<a href="${linkHref}" ${titleAttr} target="_blank" rel="noopener noreferrer">${linkText}</a>`;
                 }
@@ -388,7 +395,9 @@
             if (!text && !currentImageData && !currentDocumentText && !currentYouTubeId) return;
             if (isWaiting) return;
 
+            // ✨ 獲取開關狀態
             const isWebSearchEnabled = document.getElementById('web-search-toggle').checked;
+            const isAutoImageEnabled = document.getElementById('auto-image-toggle').checked;
             
             let displayMsg = text;
             if (currentDocumentName) displayMsg = `📎 [文件: ${currentDocumentName}]\n${text}`;
@@ -423,6 +432,7 @@
                         file_data: imgBase64, 
                         mime_type: mime,
                         web_search: isWebSearchEnabled,
+                        auto_image: isAutoImageEnabled, // ✨ 將狀態傳遞給後端
                         youtube_id: finalYoutubeId
                     }),
                     signal: abortController.signal
