@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>anyGem - Super Agent v73.0 (Auto-Image Edition)</title>
+    <title>anyGem - Super Agent v76.2 (Ultimate PPTX Edition)</title>
     
     <link rel="preconnect" href="https://cdn.tailwindcss.com">
     <link rel="preconnect" href="https://cdn.jsdelivr.net">
@@ -94,7 +94,7 @@
             </div>
         </div>
 
-        <div class="p-4 border-t border-[#333] text-xs text-gray-500 text-center font-mono shrink-0">v73.0 Auto-Image Edition</div>
+        <div class="p-4 border-t border-[#333] text-xs text-gray-500 text-center font-mono shrink-0">v76.2 PPTX Supported</div>
     </aside>
 
     <main class="flex-1 flex flex-col relative bg-[#131314] overflow-hidden w-full">
@@ -109,7 +109,7 @@
                 <div class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center shadow-lg shrink-0"><span class="material-symbols-rounded text-white">smart_toy</span></div>
                 <div class="flex-1">
                     <h2 class="text-xl sm:text-2xl font-bold text-white mb-2">我是您的 anyGem 代理人</h2>
-                    <p class="text-gray-400 text-sm sm:text-base leading-relaxed">我已準備好協助您處理開發、簡報與文件。您可以試著讓我寫一段 React 代碼、修改圖片或分析 YouTube 影片。</p>
+                    <p class="text-gray-400 text-sm sm:text-base leading-relaxed">我已準備好協助您處理開發、簡報與文件。您可以試著讓我寫一段 React 代碼、修改圖片或分析 PPTX/YouTube 等多媒體檔案。</p>
                 </div>
             </div>
         </div>
@@ -149,7 +149,7 @@
                             </span>
                         </label>
 
-                        <!-- ✨ 新增：自動配圖開關 -->
+                        <!-- 自動配圖開關 -->
                         <label class="relative inline-flex items-center cursor-pointer">
                             <input type="checkbox" id="auto-image-toggle" class="sr-only peer">
                             <div class="w-8 h-4 bg-gray-600 rounded-full peer peer-checked:bg-pink-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:after:translate-x-full"></div>
@@ -162,7 +162,7 @@
                     
                     <div class="flex items-end gap-1 sm:gap-2 mt-1">
                         <button onclick="document.getElementById('file-upload').click()" class="p-2 sm:p-3 shrink-0 text-gray-400 hover:text-white rounded-xl transition-colors"><span class="material-symbols-rounded block">attach_file</span></button>
-                        <input type="file" id="file-upload" class="hidden" onchange="handleFileUpload(event)" accept="image/*,application/pdf,text/*,.docx,.xlsx,.csv">
+                        <input type="file" id="file-upload" class="hidden" onchange="handleFileUpload(event)" accept="image/*,application/pdf,text/*,.docx,.xlsx,.csv,.pptx">
                         
                         <textarea id="user-input" rows="1" placeholder="輸入指令或貼上 YouTube 網址..." class="w-full bg-transparent border-none outline-none text-gray-100 py-2.5 sm:py-3 px-1 sm:px-2 resize-none max-h-32 sm:max-h-60 text-base leading-relaxed"></textarea>
                         
@@ -209,6 +209,7 @@
         const sendBtn = document.getElementById('send-btn');
         const sendBtnIcon = sendBtn.querySelector('.material-symbols-rounded');
 
+        // ==== 各種檔案解析引擎懶加載 ====
         let pdfjsLibLoaded = false;
         async function loadPdfJs() {
             if (pdfjsLibLoaded) return;
@@ -249,6 +250,19 @@
             });
         }
 
+        // ✨ 新增：JSZip 懶加載 (用於 PPTX)
+        let jszipLoaded = false;
+        async function loadJszip() {
+            if (jszipLoaded) return;
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = "https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js";
+                script.onload = () => { jszipLoaded = true; resolve(); };
+                script.onerror = reject;
+                document.head.appendChild(script);
+            });
+        }
+
         const sidebarDom = document.getElementById('sidebar');
         const resizerDom = document.getElementById('sidebar-resizer');
         let isResizing = false;
@@ -261,10 +275,7 @@
 
         document.addEventListener('mousemove', (e) => {
             if (!isResizing) return;
-            if (window.innerWidth < 768) {
-                isResizing = false; 
-                return;
-            }
+            if (window.innerWidth < 768) { isResizing = false; return; }
             let newWidth = e.clientX;
             if (newWidth < 200) newWidth = 200;
             if (newWidth > window.innerWidth * 0.5) newWidth = window.innerWidth * 0.5;
@@ -272,17 +283,11 @@
         });
 
         document.addEventListener('mouseup', () => {
-            if (isResizing) {
-                isResizing = false;
-                document.body.style.cursor = '';
-                document.body.style.userSelect = '';
-            }
+            if (isResizing) { isResizing = false; document.body.style.cursor = ''; document.body.style.userSelect = ''; }
         });
 
         window.addEventListener('resize', () => {
-            if (window.innerWidth < 768) {
-                sidebarDom.style.width = ''; 
-            }
+            if (window.innerWidth < 768) { sidebarDom.style.width = ''; }
         });
 
         function toggleBookmarks() {
@@ -314,10 +319,7 @@
         sendBtn.onclick = sendMessage;
 
         function stopGeneration() {
-            if (abortController) {
-                abortController.abort();
-                abortController = null;
-            }
+            if (abortController) { abortController.abort(); abortController = null; }
         }
 
         userInput.addEventListener('input', function() {
@@ -327,7 +329,6 @@
 
         userInput.addEventListener('paste', function(e) {
             const pasteText = (e.clipboardData || window.clipboardData).getData('text');
-            
             const ytRegex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i;
             const ytMatch = pasteText.match(ytRegex);
             
@@ -335,12 +336,10 @@
                 e.preventDefault(); 
                 currentYouTubeId = ytMatch[1];
                 document.getElementById('yt-thumbnail').src = `https://img.youtube.com/vi/${currentYouTubeId}/mqdefault.jpg`;
-                
                 document.getElementById('youtube-preview').classList.remove('hidden');
                 document.getElementById('image-preview').classList.add('hidden');
                 document.getElementById('doc-preview').classList.add('hidden');
                 document.getElementById('upload-preview-container').classList.remove('hidden');
-                
                 document.getElementById('web-search-toggle').checked = true;
                 return;
             }
@@ -372,7 +371,6 @@
                 currentImageData = pasteText;
                 const mimeMatch = pasteText.match(/data:(.*?);/);
                 currentMimeType = mimeMatch ? mimeMatch[1] : 'image/png';
-                
                 document.getElementById('image-preview').src = currentImageData;
                 document.getElementById('image-preview').classList.remove('hidden');
                 document.getElementById('doc-preview').classList.add('hidden');
@@ -395,7 +393,6 @@
             if (!text && !currentImageData && !currentDocumentText && !currentYouTubeId) return;
             if (isWaiting) return;
 
-            // ✨ 獲取開關狀態
             const isWebSearchEnabled = document.getElementById('web-search-toggle').checked;
             const isAutoImageEnabled = document.getElementById('auto-image-toggle').checked;
             
@@ -432,7 +429,7 @@
                         file_data: imgBase64, 
                         mime_type: mime,
                         web_search: isWebSearchEnabled,
-                        auto_image: isAutoImageEnabled, // ✨ 將狀態傳遞給後端
+                        auto_image: isAutoImageEnabled,
                         youtube_id: finalYoutubeId
                     }),
                     signal: abortController.signal
@@ -488,17 +485,10 @@
                                 text += content.items.map(s => s.str).join(' ') + "\n";
                             }
                             setDocPayload(file.name, text);
-                        } catch (err) {
-                            alert("PDF 解析失敗");
-                        } finally {
-                            removeLoading(loadingId);
-                        }
+                        } catch (err) { alert("PDF 解析失敗"); } finally { removeLoading(loadingId); }
                     };
                     reader.readAsArrayBuffer(file);
-                } catch (err) {
-                    removeLoading(loadingId);
-                    alert("載入 PDF 引擎失敗，請檢查網路連線。");
-                }
+                } catch (err) { removeLoading(loadingId); alert("載入 PDF 引擎失敗，請檢查網路連線。"); }
             } else if (ext === 'docx') {
                 const loadingId = appendLoading();
                 try {
@@ -507,16 +497,10 @@
                         try {
                             const result = await mammoth.extractRawText({ arrayBuffer: e.target.result });
                             setDocPayload(file.name, result.value);
-                        } catch(err) {
-                            alert("Word 解析失敗");
-                        } finally {
-                            removeLoading(loadingId);
-                        }
+                        } catch(err) { alert("Word 解析失敗"); } finally { removeLoading(loadingId); }
                     };
                     reader.readAsArrayBuffer(file);
-                } catch (err) {
-                    removeLoading(loadingId); alert("載入 Word 引擎失敗。");
-                }
+                } catch (err) { removeLoading(loadingId); alert("載入 Word 引擎失敗。"); }
             } else if (ext === 'xlsx' || ext === 'csv') {
                 const loadingId = appendLoading();
                 try {
@@ -530,21 +514,70 @@
                                 let csvData = XLSX.utils.sheet_to_csv(workbook.Sheets[sheetName]);
                                 const CHAR_LIMIT = 500000;
                                 if (csvData.length > CHAR_LIMIT) {
-                                    text += csvData.substring(0, CHAR_LIMIT) + "\n\n...[⚠️ 檔案極大，已自動截斷最後部分以保護系統與節省 Token]...";
-                                } else {
-                                    text += csvData;
-                                }
+                                    text += csvData.substring(0, CHAR_LIMIT) + "\n\n...[⚠️ 檔案極大，已自動截斷最後部分]...";
+                                } else { text += csvData; }
                             });
                             setDocPayload(file.name, text);
-                        } catch(err) {
-                            alert("Excel 解析失敗");
+                        } catch(err) { alert("Excel 解析失敗"); } finally { removeLoading(loadingId); }
+                    };
+                    reader.readAsArrayBuffer(file);
+                } catch (err) { removeLoading(loadingId); alert("載入 Excel 引擎失敗。"); }
+            } 
+            // ✨ 新增：純前端 PPTX 解析引擎
+            else if (ext === 'pptx') {
+                const loadingId = appendLoading();
+                try {
+                    await loadJszip();
+                    reader.onload = async (e) => {
+                        try {
+                            const zip = new JSZip();
+                            const loadedZip = await zip.loadAsync(e.target.result);
+                            let text = `【系統解析：簡報檔名 ${file.name}】\n\n`;
+                            
+                            const slideFiles = Object.keys(loadedZip.files).filter(name => name.match(/^ppt\/slides\/slide\d+\.xml$/));
+                            const notesFiles = Object.keys(loadedZip.files).filter(name => name.match(/^ppt\/notesSlides\/notesSlide\d+\.xml$/));
+                            
+                            const sortRegex = /(\d+)\.xml$/;
+                            slideFiles.sort((a, b) => parseInt(a.match(sortRegex)?.[1] || '0') - parseInt(b.match(sortRegex)?.[1] || '0'));
+                            
+                            const parser = new DOMParser();
+
+                            for (const slidePath of slideFiles) {
+                                const slideNum = slidePath.match(sortRegex)?.[1];
+                                text += `--- 第 ${slideNum} 頁 ---\n`;
+
+                                const slideXmlString = await loadedZip.file(slidePath).async("string");
+                                if (slideXmlString) {
+                                    const xmlDoc = parser.parseFromString(slideXmlString, "text/xml");
+                                    const textNodes = xmlDoc.getElementsByTagName("a:t");
+                                    let extractedText = "";
+                                    for (let i = 0; i < textNodes.length; i++) extractedText += textNodes[i].textContent + " ";
+                                    text += `[投影片內容]:\n${extractedText.trim()}\n`;
+                                }
+
+                                const notePath = `ppt/notesSlides/notesSlide${slideNum}.xml`;
+                                if (notesFiles.includes(notePath)) {
+                                    const noteXmlString = await loadedZip.file(notePath).async("string");
+                                    if (noteXmlString) {
+                                        const xmlDoc = parser.parseFromString(noteXmlString, "text/xml");
+                                        const textNodes = xmlDoc.getElementsByTagName("a:t");
+                                        let extractedText = "";
+                                        for (let i = 0; i < textNodes.length; i++) extractedText += textNodes[i].textContent + " ";
+                                        if (extractedText.trim()) text += `[講者備忘錄]:\n${extractedText.trim()}\n`;
+                                    }
+                                }
+                                text += `\n`;
+                            }
+                            setDocPayload(file.name, text);
+                        } catch (err) {
+                            alert("PPTX 解析失敗，可能檔案損毀或非標準格式。");
                         } finally {
                             removeLoading(loadingId);
                         }
                     };
                     reader.readAsArrayBuffer(file);
                 } catch (err) {
-                    removeLoading(loadingId); alert("載入 Excel 引擎失敗。");
+                    removeLoading(loadingId); alert("載入 ZIP 引擎失敗。");
                 }
             } else {
                 reader.onload = (e) => setDocPayload(file.name, e.target.result);
@@ -640,7 +673,7 @@
         
         function startNewSession() {
             currentSessionId = generateUUID(); chatContainer.innerHTML = '';
-            appendMessage('ai', "您好！已為您開啟新的對話。您可以試著讓我寫代碼、製作簡報或分析文件。");
+            appendMessage('ai', "您好！已為您開啟新的對話。您可以試著讓我寫代碼、製作簡報或分析文件與 PPTX 檔案。");
             if (window.innerWidth < 768) toggleSidebar();
             loadSessions();
         }
@@ -669,13 +702,8 @@
                 const list = document.getElementById('session-list');
                 list.innerHTML = '';
                 
-                if (data && data.status === "success" && !data.sessions) {
-                     return;
-                }
-
-                if (!data || !data.sessions || !Array.isArray(data.sessions)) {
-                    return;
-                }
+                if (data && data.status === "success" && !data.sessions) return;
+                if (!data || !data.sessions || !Array.isArray(data.sessions)) return;
 
                 data.sessions.forEach(s => {
                     const isActive = s.id === currentSessionId;
@@ -775,4 +803,3 @@
     </script>
 </body>
 </html>
-
