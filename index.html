@@ -1,311 +1,778 @@
-"use client";
-
-import React, { useState, useRef, useEffect } from 'react';
-// 這是真實專案使用的依賴套件，請確保已執行 npm install ai @ai-sdk/react jszip marked lucide-react
-import { marked } from 'marked';
-import { Send, Paperclip, Image as ImageIcon, Globe, Play, X, Loader2, FileText } from 'lucide-react';
-
-// ==========================================
-// 🛠️ 1. PPTX 前端極速解析引擎 (Client-Side Parser)
-// ==========================================
-async function parsePPTX(file: File): Promise<string> {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve(`【系統解析：簡報檔名 ${file.name}】\n\n--- 第 1 頁 ---\n[投影片內容]:\n（這是線上預覽環境的模擬萃取結果。）\n\n[講者備忘錄]:\n請在您的本機電腦執行 npm run dev 來測試真實的解析功能！\n`);
-    }, 1500);
-  });
-}
-
-function extractTextFromOpenXml(xmlString: string, domParser: DOMParser): string {
-  const xmlDoc = domParser.parseFromString(xmlString, "text/xml");
-  const textNodes = xmlDoc.getElementsByTagName("a:t");
-  let extractedText = "";
-  for (let i = 0; i < textNodes.length; i++) {
-    extractedText += textNodes[i].textContent + " ";
-  }
-  return extractedText.trim();
-}
-
-// ==========================================
-// 🛠️ 1.5 模擬 Vercel AI SDK 的 useChat (Canvas 模擬版)
-// ==========================================
-function useChat({ api, body }: any = {}) {
-  const [messages, setMessages] = useState<Array<{id: string, role: string, content: string}>>([]);
-  const [input, setInput] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => setInput(e.target.value);
-  
-  const handleSubmit = (e?: React.FormEvent) => {
-    e?.preventDefault();
-    if (!input.trim()) return;
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>anyGem - Super Agent v73.0 (Auto-Image Edition)</title>
     
-    const userMsg = { id: Date.now().toString(), role: 'user', content: input };
-    setMessages(prev => [...prev, userMsg]);
-    setInput("");
-    setIsLoading(true);
+    <link rel="preconnect" href="https://cdn.tailwindcss.com">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
 
-    setTimeout(() => {
-      const aiMsg = { 
-        id: (Date.now() + 1).toString(), 
-        role: 'assistant', 
-        content: `*(這是 Canvas 預覽環境的模擬回覆)*\n\n我已經收到您的指令：\n> ${userMsg.content}\n\n在您的真實專案中，這裡會透過 \`ai/react\` 連接到後端進行真實對話與生成。` 
-      };
-      setMessages(prev => [...prev, aiMsg]);
-      setIsLoading(false);
-    }, 1500);
-  };
-
-  return { messages, input, handleInputChange, handleSubmit, setInput, isLoading };
-}
-
-// ==========================================
-// 🎨 2. Artifacts 預覽視窗元件
-// ==========================================
-const ArtifactModal = ({ code, onClose }: { code: string, onClose: () => void }) => {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 md:p-8">
-      <div className="bg-white w-full h-full max-w-6xl rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
-        <div className="flex items-center justify-between px-6 py-4 border-b bg-gray-50 text-gray-800">
-          <div className="flex items-center gap-2">
-            <Play className="w-5 h-5 text-indigo-600" />
-            <h3 className="font-bold text-lg">anyGem Artifacts 魔法預覽</h3>
-          </div>
-          <button onClick={onClose} className="p-2 hover:bg-gray-200 rounded-full transition-colors">
-            <X className="w-6 h-6" />
-          </button>
-        </div>
-        <div className="flex-1 bg-white relative">
-          <iframe 
-            srcDoc={code} 
-            className="absolute inset-0 w-full h-full border-0" 
-            title="Artifact Preview"
-            sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
-          />
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// ==========================================
-// 🤖 3. 系統主元件 (App)
-// ==========================================
-export default function App() {
-  // 狀態管理
-  const [autoImage, setAutoImage] = useState(false);
-  const [webSearch, setWebSearch] = useState(false);
-  const [isParsing, setIsParsing] = useState(false);
-  const [previewCode, setPreviewCode] = useState<string | null>(null);
-  
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  // 真實 Vercel AI SDK 的 useChat
-  const { messages, input, handleInputChange, handleSubmit, setInput, isLoading } = useChat({
-    api: '/api/chat', // 對接到您的 Vercel API Route
-    body: {
-      auto_image: autoImage,
-      web_search: webSearch
-    }
-  });
-
-  // 自動捲動到最新訊息
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
-
-  // 檔案上傳攔截與 PPTX 處理
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (file.name.endsWith('.pptx')) {
-      setIsParsing(true);
-      try {
-        const extractedText = await parsePPTX(file);
-        // 將解析出的純文字附加到輸入框中
-        setInput((prev) => prev + `\n\n【已載入簡報：${file.name}】\n請根據以下內容進行分析：\n${extractedText}\n`);
-      } catch (err) {
-        alert("解析簡報失敗，請確認檔案格式。");
-      } finally {
-        setIsParsing(false);
-        if (fileInputRef.current) fileInputRef.current.value = '';
-      }
-    } else {
-      alert("目前前端極速解析僅支援 .pptx 格式！");
-    }
-  };
-
-  // 擷取 Artifacts 代碼
-  const extractArtifacts = (content: string) => {
-    const htmlMatch = content.match(/```html\n([\s\S]*?)```/);
-    if (htmlMatch && htmlMatch[1]) {
-      return htmlMatch[1];
-    }
-    return null;
-  };
-
-  return (
-    <div className="flex flex-col h-screen bg-[#0f1115] text-gray-200 font-sans selection:bg-indigo-500/30">
-      {/* 頂部導航列 */}
-      <header className="flex items-center justify-between px-6 py-4 bg-[#16181d] border-b border-gray-800 shadow-sm z-10">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center font-bold text-white shadow-lg">
-            G
-          </div>
-          <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-gray-100 to-gray-400">
-            anyGem
-          </h1>
-          <span className="px-2 py-1 text-xs font-medium bg-gray-800 text-gray-400 rounded-md border border-gray-700">
-            v76.1 Ultimate
-          </span>
-        </div>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0" />
+    
+    <style>
+        body { background-color: #131314; color: #e3e3e3; font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #444; }
         
-        {/* 控制開關區域 */}
-        <div className="flex items-center gap-4">
-          <label className="flex items-center gap-2 cursor-pointer group">
-            <div className={`p-2 rounded-full transition-colors ${webSearch ? 'bg-blue-500/20 text-blue-400' : 'bg-gray-800 text-gray-400 group-hover:bg-gray-700'}`}>
-              <Globe className="w-4 h-4" />
+        .prose { max-width: 100%; word-break: break-word; overflow-wrap: break-word; }
+        .prose pre { background-color: #1e1e20; border-radius: 12px; padding: 1.25rem; overflow-x: auto; border: 1px solid #333; margin: 1rem 0; position: relative; max-width: 100%; }
+        .prose code { color: #f87171; background-color: rgba(255,255,255,0.1); padding: 0.2rem 0.4rem; border-radius: 6px; font-size: 0.9em; font-family: 'Fira Code', monospace; }
+        .prose a { color: #8ab4f8; text-decoration: underline; text-underline-offset: 4px; transition: color 0.2s; }
+        .prose h1, .prose h2, .prose h3 { color: #fff; margin-top: 1.5rem; margin-bottom: 0.75rem; font-weight: 600; }
+        .prose p { margin-bottom: 1rem; line-height: 1.7; }
+        .prose img { max-width: 100%; border-radius: 0.75rem; height: auto; }
+
+        .typing-indicator span { animation: blink 1.4s infinite both; height: 5px; width: 5px; background-color: #888; border-radius: 50%; display: inline-block; margin: 0 2px; }
+        @keyframes blink { 0% { opacity: 0.2; } 20% { opacity: 1; } 100% { opacity: 0.2; } }
+
+        .active-session { background-color: #33353a; color: white; border-left: 4px solid #8ab4f8; }
+        .pinned-icon { transform: rotate(-45deg); color: #8ab4f8; }
+    </style>
+</head>
+<body class="h-screen flex overflow-hidden">
+
+    <div id="preview-modal" class="fixed inset-0 z-50 hidden bg-black/90 backdrop-blur-md flex-col">
+        <div class="h-14 bg-[#1e1f22] border-b border-[#333] flex items-center justify-between px-4 sm:px-6">
+            <div class="flex items-center gap-2 sm:gap-3">
+                <span class="material-symbols-rounded text-blue-400">deployed_code</span>
+                <span class="font-semibold text-xs sm:text-sm tracking-wide text-white truncate">Artifact Preview</span>
             </div>
-            <span className="text-sm font-medium select-none">連網搜尋</span>
-            <input type="checkbox" className="sr-only" checked={webSearch} onChange={(e) => setWebSearch(e.target.checked)} />
-          </label>
-          
-          <label className="flex items-center gap-2 cursor-pointer group">
-            <div className={`p-2 rounded-full transition-colors ${autoImage ? 'bg-pink-500/20 text-pink-400' : 'bg-gray-800 text-gray-400 group-hover:bg-gray-700'}`}>
-              <ImageIcon className="w-4 h-4" />
+            <div class="flex items-center gap-2 sm:gap-4 shrink-0">
+                <button onclick="refreshPreview()" class="p-2 text-gray-400 hover:text-white transition-colors"><span class="material-symbols-rounded">refresh</span></button>
+                <button onclick="closePreview()" class="p-2 text-gray-400 hover:text-red-400 bg-[#333] hover:bg-red-500/10 rounded-full transition-all"><span class="material-symbols-rounded">close</span></button>
             </div>
-            <span className="text-sm font-medium select-none">簡報自動配圖</span>
-            <input type="checkbox" className="sr-only" checked={autoImage} onChange={(e) => setAutoImage(e.target.checked)} />
-          </label>
         </div>
-      </header>
-
-      {/* 對話記錄區 */}
-      <main className="flex-1 overflow-y-auto p-4 md:p-8 space-y-6 scroll-smooth">
-        {messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-gray-500 space-y-4">
-            <div className="w-16 h-16 rounded-2xl bg-gray-800/50 flex items-center justify-center border border-gray-700/50">
-              <FileText className="w-8 h-8 text-indigo-400/50" />
-            </div>
-            <p className="text-lg">開始與 anyGem 對話，或上傳 PPTX 檔案進行極速分析</p>
-          </div>
-        ) : (
-          <div className="max-w-4xl mx-auto space-y-8">
-            {messages.map((m) => {
-              const artifactCode = m.role === 'assistant' ? extractArtifacts(m.content) : null;
-              
-              return (
-                <div key={m.id} className={`flex gap-4 ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  {m.role === 'assistant' && (
-                    <div className="w-8 h-8 shrink-0 rounded-full bg-indigo-600 flex items-center justify-center text-white shadow-sm mt-1">
-                      <span className="text-xs font-bold">AI</span>
-                    </div>
-                  )}
-                  
-                  <div className={`relative max-w-[85%] px-5 py-4 rounded-2xl shadow-sm leading-relaxed ${
-                    m.role === 'user' 
-                      ? 'bg-indigo-600 text-white rounded-tr-sm' 
-                      : 'bg-[#1e2028] text-gray-200 border border-gray-800/60 rounded-tl-sm'
-                  }`}>
-                    {/* Markdown 渲染 */}
-                    <div 
-                      className="prose prose-invert max-w-none prose-p:leading-relaxed prose-pre:bg-[#13141a] prose-pre:border prose-pre:border-gray-800"
-                      dangerouslySetInnerHTML={{ __html: marked.parse(m.content) as string }} 
-                    />
-                    
-                    {/* Artifacts 魔法預覽按鈕 */}
-                    {artifactCode && (
-                      <div className="mt-4 pt-4 border-t border-gray-700/50 flex justify-end">
-                        <button
-                          onClick={() => setPreviewCode(artifactCode)}
-                          className="flex items-center gap-2 px-4 py-2 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 rounded-lg text-sm font-medium transition-all duration-200 border border-indigo-500/20"
-                        >
-                          <Play className="w-4 h-4" />
-                          預覽網頁 (Artifacts)
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-            {isLoading && (
-              <div className="flex gap-4 justify-start animate-pulse">
-                <div className="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center mt-1">
-                  <div className="w-2 h-2 rounded-full bg-indigo-500 animate-ping"></div>
-                </div>
-                <div className="bg-[#1e2028] px-5 py-4 rounded-2xl rounded-tl-sm border border-gray-800/60 text-gray-400">
-                  代理人思考中...
-                </div>
-              </div>
-            )}
-            <div ref={messagesEndRef} />
-          </div>
-        )}
-      </main>
-
-      {/* 底部輸入區 */}
-      <footer className="bg-[#16181d] border-t border-gray-800 p-4 shrink-0">
-        <div className="max-w-4xl mx-auto relative">
-          <form 
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (input.trim() && !isParsing) handleSubmit(e);
-            }} 
-            className="relative flex items-end gap-2 bg-[#0f1115] rounded-xl border border-gray-700 focus-within:border-indigo-500/50 focus-within:ring-1 focus-within:ring-indigo-500/50 transition-all shadow-inner p-2"
-          >
-            <input 
-              type="file" 
-              accept=".pptx"
-              ref={fileInputRef} 
-              onChange={handleFileChange} 
-              className="hidden" 
-            />
-            
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isParsing || isLoading}
-              className="p-3 text-gray-400 hover:text-indigo-400 hover:bg-gray-800 rounded-lg transition-colors disabled:opacity-50 shrink-0"
-              title="上傳 PPTX 檔案"
-            >
-              {isParsing ? <Loader2 className="w-5 h-5 animate-spin text-indigo-500" /> : <Paperclip className="w-5 h-5" />}
-            </button>
-            
-            <textarea
-              value={input}
-              onChange={handleInputChange}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  if (input.trim() && !isParsing && !isLoading) handleSubmit(e as any);
-                }
-              }}
-              placeholder={isParsing ? "正在榨取簡報純文字中，請稍候..." : "輸入您的指令，或上傳 PPTX 簡報檔進行分析... (Shift + Enter 換行)"}
-              className="w-full bg-transparent text-gray-100 placeholder-gray-600 resize-none outline-none py-3 px-2 max-h-48 min-h-[52px] scrollbar-thin scrollbar-thumb-gray-700"
-              rows={Math.min(10, input.split('\n').length)}
-              disabled={isParsing || isLoading}
-            />
-            
-            <button
-              type="submit"
-              disabled={!input.trim() || isParsing || isLoading}
-              className="p-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-500 transition-colors disabled:opacity-50 disabled:hover:bg-indigo-600 shrink-0 shadow-md mb-0.5 mr-0.5"
-            >
-              <Send className="w-5 h-5" />
-            </button>
-          </form>
-          <div className="text-center mt-3 text-xs text-gray-600 font-medium">
-            Powered by Vercel AI SDK & Gemini Flash • anyGem Agent System
-          </div>
+        <div class="flex-1 bg-white relative">
+            <iframe id="preview-iframe" sandbox="allow-scripts allow-forms allow-modals" class="w-full h-full border-none absolute inset-0"></iframe>
         </div>
-      </footer>
-
-      {previewCode && (
-        <ArtifactModal code={previewCode} onClose={() => setPreviewCode(null)} />
-      )}
     </div>
-  );
-}
+
+    <aside id="sidebar" class="bg-[#1e1f22] border-r border-[#333] flex flex-col transition-transform duration-300 z-30 absolute md:relative h-full -translate-x-full md:translate-x-0 w-[85vw] max-w-[340px] md:w-[288px] md:max-w-none shadow-2xl md:shadow-none" style="min-width: 200px;">
+        <div id="sidebar-resizer" class="hidden md:block absolute top-0 right-0 w-1.5 h-full cursor-col-resize hover:bg-blue-500/50 z-40 transition-colors"></div>
+
+        <div class="p-6">
+            <div class="flex items-center gap-3 mb-8">
+                <div class="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
+                    <span class="material-symbols-rounded text-white text-xl">auto_awesome</span>
+                </div>
+                <h1 class="text-xl font-bold tracking-tight text-white">anyGem Agent</h1>
+            </div>
+            <button onclick="startNewSession()" class="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold py-3 rounded-xl transition-all shadow-lg">
+                <span class="material-symbols-rounded">add</span> 新對話
+            </button>
+        </div>
+        <div id="session-list" class="flex-1 overflow-y-auto px-3 space-y-1 pb-4"></div>
+        
+        <div class="px-3 pb-4 border-t border-[#333] pt-4 shrink-0">
+            <button onclick="toggleBookmarks()" class="w-full flex items-center justify-between px-3 mb-1 group cursor-pointer outline-none hover:bg-[#2a2b2f] p-2 rounded-lg transition-colors">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-rounded text-gray-500 text-[16px] group-hover:text-blue-400 transition-colors">bookmarks</span>
+                    <span class="text-[11px] font-bold text-gray-400 uppercase tracking-wider group-hover:text-white transition-colors">外部工具 (Tools)</span>
+                </div>
+                <span id="bookmark-chevron" class="material-symbols-rounded text-gray-500 text-sm transition-transform duration-200">expand_more</span>
+            </button>
+            
+            <div id="bookmark-list" class="space-y-1 hidden mt-2">
+                <a href="https://kiteyoung8.github.io/panter/" target="_blank" class="flex items-center gap-3 p-3 rounded-xl text-gray-400 hover:bg-[#2a2b2f] hover:text-white transition-all group">
+                    <span class="material-symbols-rounded text-lg shrink-0 group-hover:text-pink-400 transition-colors">palette</span>
+                    <span class="truncate text-sm">繪圖引擎</span>
+                </a>
+                <a href="https://ppt-azure.vercel.app/" target="_blank" class="flex items-center gap-3 p-3 rounded-xl text-gray-400 hover:bg-[#2a2b2f] hover:text-white transition-all group">
+                    <span class="material-symbols-rounded text-lg shrink-0 group-hover:text-blue-400 transition-colors">style</span>
+                    <span class="truncate text-sm">智慧圖卡</span>
+                </a>
+                <a href="https://kiteyoung0520.github.io/p/" target="_blank" class="flex items-center gap-3 p-3 rounded-xl text-gray-400 hover:bg-[#2a2b2f] hover:text-white transition-all group">
+                    <span class="material-symbols-rounded text-lg shrink-0 group-hover:text-amber-400 transition-colors">slideshow</span>
+                    <span class="truncate text-sm">魔法簡報師</span>
+                </a>
+            </div>
+        </div>
+
+        <div class="p-4 border-t border-[#333] text-xs text-gray-500 text-center font-mono shrink-0">v73.0 Auto-Image Edition</div>
+    </aside>
+
+    <main class="flex-1 flex flex-col relative bg-[#131314] overflow-hidden w-full">
+        <header class="h-14 flex items-center justify-between px-4 md:hidden border-b border-[#333] bg-[#1e1f22] shrink-0 z-20">
+            <button onclick="toggleSidebar()" class="p-2 text-gray-400"><span class="material-symbols-rounded">menu</span></button>
+            <span class="font-semibold text-sm truncate px-4" id="mobile-title">新對話</span>
+            <div class="w-10"></div>
+        </header>
+
+        <div id="chat-container" class="flex-1 overflow-y-auto overflow-x-hidden px-4 py-6 md:px-12 space-y-6 pb-48 md:pb-40 w-full relative">
+            <div class="max-w-3xl mx-auto flex gap-4 sm:gap-6 w-full">
+                <div class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center shadow-lg shrink-0"><span class="material-symbols-rounded text-white">smart_toy</span></div>
+                <div class="flex-1">
+                    <h2 class="text-xl sm:text-2xl font-bold text-white mb-2">我是您的 anyGem 代理人</h2>
+                    <p class="text-gray-400 text-sm sm:text-base leading-relaxed">我已準備好協助您處理開發、簡報與文件。您可以試著讓我寫一段 React 代碼、修改圖片或分析 YouTube 影片。</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="absolute bottom-0 left-0 w-full bg-gradient-to-t from-[#131314] via-[#131314] to-transparent pt-12 pb-4 sm:pb-8 px-2 sm:px-4 md:px-12 z-20 pointer-events-none">
+            <div class="max-w-3xl mx-auto w-full pointer-events-auto">
+                <div id="upload-preview-container" class="hidden flex gap-3 mb-3 px-2">
+                    <div class="relative group">
+                        <img id="image-preview" class="hidden h-16 w-16 sm:h-20 sm:w-20 object-cover rounded-xl border-2 border-blue-500/50 shadow-lg">
+                        
+                        <div id="doc-preview" class="hidden flex items-center gap-2 sm:gap-3 bg-[#2a2b2f] p-3 sm:p-4 rounded-xl border border-[#444] shadow-lg">
+                            <span class="material-symbols-rounded text-blue-400 text-xl sm:text-2xl">description</span>
+                            <span id="doc-filename" class="text-xs sm:text-sm font-medium truncate max-w-[120px] sm:max-w-[150px]"></span>
+                        </div>
+
+                        <div id="youtube-preview" class="hidden flex items-center gap-2 sm:gap-3 bg-[#2a2b2f] p-2 pr-4 rounded-xl border border-[#444] shadow-lg">
+                            <img id="yt-thumbnail" src="" class="h-10 w-16 sm:h-12 sm:w-20 object-cover rounded-lg border border-[#444]">
+                            <div class="flex flex-col">
+                                <span class="text-[10px] text-red-400 font-bold uppercase tracking-wider">YouTube</span>
+                                <span class="text-xs sm:text-sm font-medium text-gray-200">影片連結已載入</span>
+                            </div>
+                        </div>
+
+                        <button onclick="clearUpload()" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md"><span class="material-symbols-rounded text-[14px] block">close</span></button>
+                    </div>
+                </div>
+
+                <div class="bg-[#1e1f22] rounded-2xl border border-[#333] shadow-[0_-10px_40px_rgba(0,0,0,0.5)] focus-within:border-blue-500 transition-all p-1.5 sm:p-2 mx-1 sm:mx-0">
+                    <div class="flex items-center gap-4 px-2 sm:px-3 mb-1 sm:mb-2 pt-1 border-b border-[#333] pb-1.5 sm:pb-2">
+                        
+                        <!-- 連網搜尋開關 -->
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="web-search-toggle" class="sr-only peer">
+                            <div class="w-8 h-4 bg-gray-600 rounded-full peer peer-checked:bg-blue-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:after:translate-x-full"></div>
+                            <span class="ml-2 text-xs font-medium text-gray-400 peer-checked:text-blue-400 flex items-center gap-1">
+                                <span class="material-symbols-rounded text-[14px] sm:text-sm">language</span> 連網搜尋
+                            </span>
+                        </label>
+
+                        <!-- ✨ 新增：自動配圖開關 -->
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="auto-image-toggle" class="sr-only peer">
+                            <div class="w-8 h-4 bg-gray-600 rounded-full peer peer-checked:bg-pink-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:after:translate-x-full"></div>
+                            <span class="ml-2 text-xs font-medium text-gray-400 peer-checked:text-pink-400 flex items-center gap-1">
+                                <span class="material-symbols-rounded text-[14px] sm:text-sm">imagesmode</span> 簡報自動配圖
+                            </span>
+                        </label>
+
+                    </div>
+                    
+                    <div class="flex items-end gap-1 sm:gap-2 mt-1">
+                        <button onclick="document.getElementById('file-upload').click()" class="p-2 sm:p-3 shrink-0 text-gray-400 hover:text-white rounded-xl transition-colors"><span class="material-symbols-rounded block">attach_file</span></button>
+                        <input type="file" id="file-upload" class="hidden" onchange="handleFileUpload(event)" accept="image/*,application/pdf,text/*,.docx,.xlsx,.csv">
+                        
+                        <textarea id="user-input" rows="1" placeholder="輸入指令或貼上 YouTube 網址..." class="w-full bg-transparent border-none outline-none text-gray-100 py-2.5 sm:py-3 px-1 sm:px-2 resize-none max-h-32 sm:max-h-60 text-base leading-relaxed"></textarea>
+                        
+                        <button id="send-btn" class="p-2.5 sm:p-3 shrink-0 bg-white text-black rounded-xl hover:bg-gray-200 transition-all shadow-md flex items-center justify-center">
+                            <span class="material-symbols-rounded block">send</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div id="sidebar-overlay" class="fixed inset-0 bg-black/50 z-20 hidden md:hidden" onclick="toggleSidebar()"></div>
+
+    <script>
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbwsng4RBCTX67my46U4fv7BhDYT0CIZt95dL7DNCFJTGUJLZFd_854vRGeUsQ1_BjG9/exec";
+
+        marked.use({
+            renderer: {
+                link(hrefOrToken, title, text) {
+                    let linkHref, linkTitle, linkText;
+                    if (typeof hrefOrToken === 'object' && hrefOrToken !== null) {
+                        linkHref = hrefOrToken.href;
+                        linkTitle = hrefOrToken.title;
+                        linkText = hrefOrToken.text;
+                    } else {
+                        linkHref = hrefOrToken;
+                        linkTitle = title;
+                        linkText = text;
+                    }
+                    const titleAttr = linkTitle ? `title="${linkTitle}"` : '';
+                    return `<a href="${linkHref}" ${titleAttr} target="_blank" rel="noopener noreferrer">${linkText}</a>`;
+                }
+            }
+        });
+
+        let currentSessionId = generateUUID();
+        let currentImageData = null, currentMimeType = null, currentDocumentText = null, currentDocumentName = null, currentYouTubeId = null;
+        let isWaiting = false, currentRenderCode = "";
+        let abortController = null; 
+
+        const chatContainer = document.getElementById('chat-container');
+        const userInput = document.getElementById('user-input');
+        const sendBtn = document.getElementById('send-btn');
+        const sendBtnIcon = sendBtn.querySelector('.material-symbols-rounded');
+
+        let pdfjsLibLoaded = false;
+        async function loadPdfJs() {
+            if (pdfjsLibLoaded) return;
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
+                script.onload = () => {
+                    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+                    pdfjsLibLoaded = true;
+                    resolve();
+                };
+                script.onerror = reject;
+                document.head.appendChild(script);
+            });
+        }
+
+        let mammothLoaded = false;
+        async function loadMammoth() {
+            if (mammothLoaded) return;
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = "https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js";
+                script.onload = () => { mammothLoaded = true; resolve(); };
+                script.onerror = reject;
+                document.head.appendChild(script);
+            });
+        }
+
+        let xlsxLoaded = false;
+        async function loadXlsx() {
+            if (xlsxLoaded) return;
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
+                script.onload = () => { xlsxLoaded = true; resolve(); };
+                script.onerror = reject;
+                document.head.appendChild(script);
+            });
+        }
+
+        const sidebarDom = document.getElementById('sidebar');
+        const resizerDom = document.getElementById('sidebar-resizer');
+        let isResizing = false;
+
+        resizerDom.addEventListener('mousedown', (e) => {
+            isResizing = true;
+            document.body.style.cursor = 'col-resize';
+            document.body.style.userSelect = 'none'; 
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isResizing) return;
+            if (window.innerWidth < 768) {
+                isResizing = false; 
+                return;
+            }
+            let newWidth = e.clientX;
+            if (newWidth < 200) newWidth = 200;
+            if (newWidth > window.innerWidth * 0.5) newWidth = window.innerWidth * 0.5;
+            sidebarDom.style.width = newWidth + 'px';
+        });
+
+        document.addEventListener('mouseup', () => {
+            if (isResizing) {
+                isResizing = false;
+                document.body.style.cursor = '';
+                document.body.style.userSelect = '';
+            }
+        });
+
+        window.addEventListener('resize', () => {
+            if (window.innerWidth < 768) {
+                sidebarDom.style.width = ''; 
+            }
+        });
+
+        function toggleBookmarks() {
+            const list = document.getElementById('bookmark-list');
+            const chevron = document.getElementById('bookmark-chevron');
+            list.classList.toggle('hidden');
+            if (list.classList.contains('hidden')) {
+                chevron.style.transform = 'rotate(0deg)';
+            } else {
+                chevron.style.transform = 'rotate(180deg)';
+            }
+        }
+
+        function toggleSendButton(waiting) {
+            isWaiting = waiting;
+            if (waiting) {
+                sendBtnIcon.innerText = 'stop';
+                sendBtn.classList.remove('bg-white', 'text-black', 'hover:bg-gray-200');
+                sendBtn.classList.add('bg-red-500', 'text-white', 'hover:bg-red-600');
+                sendBtn.onclick = stopGeneration;
+            } else {
+                sendBtnIcon.innerText = 'send';
+                sendBtn.classList.remove('bg-red-500', 'text-white', 'hover:bg-red-600');
+                sendBtn.classList.add('bg-white', 'text-black', 'hover:bg-gray-200');
+                sendBtn.onclick = sendMessage;
+            }
+        }
+        
+        sendBtn.onclick = sendMessage;
+
+        function stopGeneration() {
+            if (abortController) {
+                abortController.abort();
+                abortController = null;
+            }
+        }
+
+        userInput.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = (this.scrollHeight > 240 ? 240 : this.scrollHeight) + 'px';
+        });
+
+        userInput.addEventListener('paste', function(e) {
+            const pasteText = (e.clipboardData || window.clipboardData).getData('text');
+            
+            const ytRegex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i;
+            const ytMatch = pasteText.match(ytRegex);
+            
+            if (ytMatch && ytMatch[1]) {
+                e.preventDefault(); 
+                currentYouTubeId = ytMatch[1];
+                document.getElementById('yt-thumbnail').src = `https://img.youtube.com/vi/${currentYouTubeId}/mqdefault.jpg`;
+                
+                document.getElementById('youtube-preview').classList.remove('hidden');
+                document.getElementById('image-preview').classList.add('hidden');
+                document.getElementById('doc-preview').classList.add('hidden');
+                document.getElementById('upload-preview-container').classList.remove('hidden');
+                
+                document.getElementById('web-search-toggle').checked = true;
+                return;
+            }
+
+            if (e.clipboardData && e.clipboardData.items) {
+                const items = e.clipboardData.items;
+                for (let i = 0; i < items.length; i++) {
+                    if (items[i].type.indexOf('image') !== -1) {
+                        e.preventDefault(); 
+                        const file = items[i].getAsFile();
+                        const reader = new FileReader();
+                        reader.onload = (event) => {
+                            currentImageData = event.target.result;
+                            currentMimeType = file.type;
+                            document.getElementById('image-preview').src = currentImageData;
+                            document.getElementById('image-preview').classList.remove('hidden');
+                            document.getElementById('doc-preview').classList.add('hidden');
+                            document.getElementById('youtube-preview').classList.add('hidden');
+                            document.getElementById('upload-preview-container').classList.remove('hidden');
+                        };
+                        reader.readAsDataURL(file);
+                        return; 
+                    }
+                }
+            }
+
+            if (pasteText && pasteText.startsWith('data:image/')) {
+                e.preventDefault(); 
+                currentImageData = pasteText;
+                const mimeMatch = pasteText.match(/data:(.*?);/);
+                currentMimeType = mimeMatch ? mimeMatch[1] : 'image/png';
+                
+                document.getElementById('image-preview').src = currentImageData;
+                document.getElementById('image-preview').classList.remove('hidden');
+                document.getElementById('doc-preview').classList.add('hidden');
+                document.getElementById('youtube-preview').classList.add('hidden');
+                document.getElementById('upload-preview-container').classList.remove('hidden');
+            }
+        });
+
+        userInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                if (window.innerWidth < 768) return;
+                e.preventDefault();
+                if (isWaiting) stopGeneration(); 
+                else sendMessage();
+            }
+        });
+
+        async function sendMessage() {
+            const text = userInput.value.trim();
+            if (!text && !currentImageData && !currentDocumentText && !currentYouTubeId) return;
+            if (isWaiting) return;
+
+            // ✨ 獲取開關狀態
+            const isWebSearchEnabled = document.getElementById('web-search-toggle').checked;
+            const isAutoImageEnabled = document.getElementById('auto-image-toggle').checked;
+            
+            let displayMsg = text;
+            if (currentDocumentName) displayMsg = `📎 [文件: ${currentDocumentName}]\n${text}`;
+            if (currentYouTubeId) displayMsg = `📺 [YouTube 影片]\n${text}`;
+            
+            appendMessage('user', displayMsg, currentImageData);
+            
+            let payloadText = text || "請分析此內容";
+            if (currentDocumentText) {
+                payloadText = `【檔案：${currentDocumentName}】\n${currentDocumentText}\n\n指令：${payloadText}`;
+            } else if (currentYouTubeId) {
+                payloadText = `【指定 YouTube 影片】：https://www.youtube.com/watch?v=${currentYouTubeId}\n\n指令：${payloadText}`;
+            }
+
+            userInput.value = ''; userInput.style.height = 'auto';
+            const imgBase64 = currentImageData ? currentImageData.split(',')[1] : null;
+            const mime = currentMimeType;
+            const finalYoutubeId = currentYouTubeId; 
+            clearUpload();
+
+            toggleSendButton(true); 
+            const loadingId = appendLoading();
+            
+            abortController = new AbortController(); 
+
+            try {
+                const response = await fetch(GAS_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ 
+                        message: payloadText, 
+                        session_id: currentSessionId, 
+                        file_data: imgBase64, 
+                        mime_type: mime,
+                        web_search: isWebSearchEnabled,
+                        auto_image: isAutoImageEnabled, // ✨ 將狀態傳遞給後端
+                        youtube_id: finalYoutubeId
+                    }),
+                    signal: abortController.signal
+                });
+                const data = await response.json();
+                removeLoading(loadingId);
+                
+                if (data.status === "error") throw new Error(data.error || "伺服器發生未知錯誤");
+                if (data.reply) {
+                   appendMessage('ai', data.reply, data.image ? `data:${data.mime};base64,${data.image}` : null, data.model);
+                }
+                loadSessions(); 
+            } catch (err) {
+                removeLoading(loadingId);
+                if (err.name === 'AbortError') {
+                    appendMessage('ai', `🛑 **生成已手動中止。**\n您可以隨時輸入新的指令。`);
+                } else {
+                    appendMessage('ai', `❌ 執行失敗：\n\`\`\`text\n${err.message}\n\`\`\``);
+                }
+            } finally { 
+                toggleSendButton(false); 
+                abortController = null;
+            }
+        }
+
+        async function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            const ext = file.name.split('.').pop().toLowerCase();
+            
+            if (file.type.startsWith('image/')) {
+                reader.onload = (e) => {
+                    currentImageData = e.target.result; currentMimeType = file.type;
+                    document.getElementById('image-preview').src = currentImageData;
+                    document.getElementById('image-preview').classList.remove('hidden');
+                    document.getElementById('doc-preview').classList.add('hidden');
+                    document.getElementById('youtube-preview').classList.add('hidden');
+                    document.getElementById('upload-preview-container').classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            } else if (file.type === 'application/pdf' || ext === 'pdf') {
+                const loadingId = appendLoading();
+                try {
+                    await loadPdfJs();
+                    reader.onload = async (e) => {
+                        try {
+                            const pdf = await pdfjsLib.getDocument(new Uint8Array(e.target.result)).promise;
+                            let text = "";
+                            for (let i = 1; i <= pdf.numPages; i++) {
+                                const page = await pdf.getPage(i);
+                                const content = await page.getTextContent();
+                                text += content.items.map(s => s.str).join(' ') + "\n";
+                            }
+                            setDocPayload(file.name, text);
+                        } catch (err) {
+                            alert("PDF 解析失敗");
+                        } finally {
+                            removeLoading(loadingId);
+                        }
+                    };
+                    reader.readAsArrayBuffer(file);
+                } catch (err) {
+                    removeLoading(loadingId);
+                    alert("載入 PDF 引擎失敗，請檢查網路連線。");
+                }
+            } else if (ext === 'docx') {
+                const loadingId = appendLoading();
+                try {
+                    await loadMammoth();
+                    reader.onload = async (e) => {
+                        try {
+                            const result = await mammoth.extractRawText({ arrayBuffer: e.target.result });
+                            setDocPayload(file.name, result.value);
+                        } catch(err) {
+                            alert("Word 解析失敗");
+                        } finally {
+                            removeLoading(loadingId);
+                        }
+                    };
+                    reader.readAsArrayBuffer(file);
+                } catch (err) {
+                    removeLoading(loadingId); alert("載入 Word 引擎失敗。");
+                }
+            } else if (ext === 'xlsx' || ext === 'csv') {
+                const loadingId = appendLoading();
+                try {
+                    await loadXlsx();
+                    reader.onload = (e) => {
+                        try {
+                            const workbook = XLSX.read(e.target.result, { type: 'array' });
+                            let text = "";
+                            workbook.SheetNames.forEach(sheetName => {
+                                text += `\n--- 表單: ${sheetName} ---\n`;
+                                let csvData = XLSX.utils.sheet_to_csv(workbook.Sheets[sheetName]);
+                                const CHAR_LIMIT = 500000;
+                                if (csvData.length > CHAR_LIMIT) {
+                                    text += csvData.substring(0, CHAR_LIMIT) + "\n\n...[⚠️ 檔案極大，已自動截斷最後部分以保護系統與節省 Token]...";
+                                } else {
+                                    text += csvData;
+                                }
+                            });
+                            setDocPayload(file.name, text);
+                        } catch(err) {
+                            alert("Excel 解析失敗");
+                        } finally {
+                            removeLoading(loadingId);
+                        }
+                    };
+                    reader.readAsArrayBuffer(file);
+                } catch (err) {
+                    removeLoading(loadingId); alert("載入 Excel 引擎失敗。");
+                }
+            } else {
+                reader.onload = (e) => setDocPayload(file.name, e.target.result);
+                reader.readAsText(file);
+            }
+        }
+
+        function setDocPayload(name, text) {
+            currentDocumentName = name; currentDocumentText = text;
+            document.getElementById('doc-filename').innerText = name;
+            document.getElementById('doc-preview').classList.remove('hidden');
+            document.getElementById('image-preview').classList.add('hidden');
+            document.getElementById('youtube-preview').classList.add('hidden');
+            document.getElementById('upload-preview-container').classList.remove('hidden');
+        }
+
+        function clearUpload() {
+            currentImageData = null; currentDocumentText = null; currentDocumentName = null; currentYouTubeId = null;
+            document.getElementById('upload-preview-container').classList.add('hidden');
+            document.getElementById('youtube-preview').classList.add('hidden');
+            document.getElementById('file-upload').value = '';
+        }
+
+        function appendMessage(role, text, imageSrc = null, model = null) {
+            const isAI = role === 'ai';
+            const wrap = document.createElement('div');
+            wrap.className = `flex gap-3 sm:gap-4 max-w-4xl mx-auto w-full group ${!isAI ? 'flex-row-reverse' : ''}`;
+            
+            const avatar = `<div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center shrink-0 shadow-lg ${isAI ? 'bg-blue-600' : 'bg-gray-700'}">
+                <span class="material-symbols-rounded text-white text-[18px] sm:text-xl">${isAI ? 'smart_toy' : 'person'}</span>
+            </div>`;
+
+            let body = `<div class="flex-1 ${!isAI ? 'text-right' : ''} space-y-2 max-w-[90%] sm:max-w-[85%] relative min-w-0">`;
+            if (imageSrc) body += `<img src="${imageSrc}" class="rounded-xl border border-[#333] mb-2 max-w-full">`;
+            if (text) body += `<div class="prose prose-invert text-gray-200 bg-[#1e1f22] p-4 sm:p-5 rounded-2xl rounded-tl-none shadow-sm text-sm sm:text-base">${isAI ? marked.parse(text) : text.replace(/\n/g, '<br>')}</div>`;
+            
+            if (isAI && text) {
+                body += `<div class="flex items-center gap-2 mt-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                    <button class="copy-btn p-1.5 text-gray-400 hover:text-white hover:bg-[#333] rounded-md"><span class="material-symbols-rounded text-[16px] sm:text-[18px]">content_copy</span></button>
+                </div>`;
+            }
+            body += `</div>`;
+            wrap.innerHTML = avatar + body;
+            chatContainer.appendChild(wrap);
+
+            if (isAI) {
+                wrap.querySelectorAll('pre code').forEach(code => {
+                    const lang = code.className;
+                    if (lang.includes('language-html') || lang.includes('language-jsx') || lang.includes('language-javascript')) {
+                        const btn = document.createElement('button');
+                        btn.className = "absolute top-2 sm:top-3 right-2 sm:right-3 bg-blue-600 hover:bg-blue-500 text-white text-[10px] sm:text-xs px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg flex items-center gap-1 shadow-lg";
+                        btn.innerHTML = '<span class="material-symbols-rounded text-[12px] sm:text-sm">play_circle</span> 預覽';
+                        btn.onclick = () => openPreview(code.innerText);
+                        code.parentElement.appendChild(btn);
+                    }
+                });
+            }
+
+            if (isAI && text) {
+                const btn = wrap.querySelector('.copy-btn');
+                btn.onclick = () => {
+                    navigator.clipboard.writeText(text).then(() => {
+                        const icon = btn.querySelector('.material-symbols-rounded');
+                        icon.innerText = 'check'; icon.classList.add('text-green-400');
+                        setTimeout(() => { icon.innerText = 'content_copy'; icon.classList.remove('text-green-400'); }, 2000);
+                    });
+                };
+            }
+            scrollToBottom();
+        }
+
+        function appendLoading() {
+            const id = 'loader-' + Date.now();
+            const div = document.createElement('div');
+            div.id = id; div.className = "flex gap-3 sm:gap-4 max-w-4xl mx-auto w-full";
+            div.innerHTML = `<div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-blue-600 flex items-center justify-center shrink-0 animate-pulse"><span class="material-symbols-rounded text-white text-[18px] sm:text-xl">hourglass_empty</span></div>
+                <div class="pt-1.5 sm:pt-3 flex gap-2 items-center text-gray-500 text-xs sm:text-sm italic typing-indicator">代理人正忙碌中<span></span><span></span><span></span></div>`;
+            chatContainer.appendChild(div);
+            scrollToBottom();
+            return id;
+        }
+
+        function removeLoading(id) { const el = document.getElementById(id); if (el) el.remove(); }
+        function scrollToBottom() { chatContainer.scrollTop = chatContainer.scrollHeight; }
+        function generateUUID() { return 'xxxx-4xxx-yxxx'.replace(/[xy]/g, c => (c === 'x' ? (Math.random() * 16 | 0) : (Math.random() * 16 | 0 & 0x3 | 0x8)).toString(16)); }
+        
+        function toggleSidebar() { 
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            sidebar.classList.toggle('-translate-x-full'); 
+            overlay.classList.toggle('hidden');
+        }
+        
+        function startNewSession() {
+            currentSessionId = generateUUID(); chatContainer.innerHTML = '';
+            appendMessage('ai', "您好！已為您開啟新的對話。您可以試著讓我寫代碼、製作簡報或分析文件。");
+            if (window.innerWidth < 768) toggleSidebar();
+            loadSessions();
+        }
+
+        async function switchSession(id, title) {
+            if (id === currentSessionId && chatContainer.children.length > 1) return;
+            currentSessionId = id; document.getElementById('mobile-title').innerText = title;
+            chatContainer.innerHTML = ''; const loadingId = appendLoading();
+            if (window.innerWidth < 768) toggleSidebar();
+            try {
+                const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ mode: 'system', action: 'load_session', session_id: id }) });
+                const data = await res.json(); removeLoading(loadingId);
+                
+                let logsData = data.logs || [];
+                if (Array.isArray(logsData)) {
+                    logsData.forEach(l => appendMessage(l.role === 'ai' ? 'ai' : 'user', l.text));
+                }
+                loadSessions();
+            } catch (e) { console.error(e); }
+        }
+
+        async function loadSessions() {
+            try {
+                const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ mode: 'system', action: 'get_session_list' }) });
+                const data = await res.json();
+                const list = document.getElementById('session-list');
+                list.innerHTML = '';
+                
+                if (data && data.status === "success" && !data.sessions) {
+                     return;
+                }
+
+                if (!data || !data.sessions || !Array.isArray(data.sessions)) {
+                    return;
+                }
+
+                data.sessions.forEach(s => {
+                    const isActive = s.id === currentSessionId;
+                    const isPinned = s.pinned;
+                    const item = document.createElement('div');
+                    item.className = `group flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all ${isActive ? 'active-session' : 'text-gray-400 hover:bg-[#2a2b2f] hover:text-white'}`;
+                    const iconName = isPinned ? 'push_pin' : (isActive ? 'chat_bubble' : 'chat');
+                    
+                    item.innerHTML = `<div class="flex items-center gap-3 truncate flex-1 min-w-0">
+                        <span class="material-symbols-rounded text-lg shrink-0 ${isPinned ? 'pinned-icon' : ''}">${iconName}</span>
+                        <span class="truncate text-sm font-medium tracking-wide">${s.title}</span>
+                    </div>
+                    <div class="flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 shrink-0 ml-2 transition-opacity">
+                        <button class="p-1 pin-btn ${isPinned ? 'text-blue-500' : ''} hover:bg-[#333] rounded-md transition-colors"><span class="material-symbols-rounded text-[16px]">push_pin</span></button>
+                        <button class="p-1 edit-btn hover:text-blue-400 hover:bg-[#333] rounded-md transition-colors"><span class="material-symbols-rounded text-[16px]">edit</span></button>
+                        <button class="p-1 del-btn hover:text-red-400 hover:bg-[#333] rounded-md transition-colors"><span class="material-symbols-rounded text-[16px]">delete</span></button>
+                    </div>`;
+                    item.onclick = () => switchSession(s.id, s.title);
+                    item.querySelector('.pin-btn').onclick = (e) => { e.stopPropagation(); togglePinSession(s.id, isPinned); };
+                    item.querySelector('.edit-btn').onclick = (e) => { e.stopPropagation(); renameSession(s.id, s.title); };
+                    item.querySelector('.del-btn').onclick = (e) => { e.stopPropagation(); deleteSession(s.id); };
+                    list.appendChild(item);
+                });
+            } catch (e) {}
+        }
+
+        async function togglePinSession(id, current) {
+            await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ mode: 'system', action: 'pin_session', session_id: id, is_pinned: !current }) });
+            loadSessions();
+        }
+        async function renameSession(id, old) {
+            const n = prompt("重命名對話：", old);
+            if (n && n.trim()) {
+                await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ mode: 'system', action: 'rename_session', session_id: id, new_title: n }) });
+                loadSessions();
+            }
+        }
+        async function deleteSession(id) {
+            if (confirm("確定要刪除嗎？")) {
+                await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ mode: 'system', action: 'delete_session', session_id: id }) });
+                if (id === currentSessionId) startNewSession(); else loadSessions();
+            }
+        }
+
+        function openPreview(code) {
+            let renderCode = code;
+            const isReact = code.includes('export default') || code.includes('import React') || code.includes('className=');
+            const isHTML = code.trim().toLowerCase().startsWith('<!doctype html') || code.trim().toLowerCase().startsWith('<html');
+
+            if (isReact && !isHTML) {
+                let cleanedCode = code.replace(/import\s+.*?from\s+['"].*?['"];?/g, '');
+                let componentMatch = cleanedCode.match(/export\s+default\s+function\s+([A-Za-z0-9_]+)/);
+                let renderTarget = componentMatch ? componentMatch[1] : 'App';
+                cleanedCode = cleanedCode.replace(/export\s+default\s+function/g, 'function');
+
+                renderCode = `<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"><\/script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"><\/script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"><\/script>
+    <script src="https://cdn.tailwindcss.com"><\/script>
+    <script src="https://unpkg.com/lucide@latest"><\/script>
+</head>
+<body class="bg-gray-50"><div id="root"></div>
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useMemo, useCallback } = React;
+        try {
+            ${cleanedCode}
+            const root = ReactDOM.createRoot(document.getElementById('root'));
+            root.render(<${renderTarget} />);
+            setTimeout(() => { if(window.lucide) window.lucide.createIcons(); }, 100);
+        } catch(err) {
+            document.getElementById('root').innerHTML = '<div class="p-4 text-red-700"><strong>渲染錯誤:</strong><br>' + err.message + '</div>';
+        }
+    <\/script>
+</body></html>`;
+            }
+            currentRenderCode = renderCode;
+            document.getElementById('preview-modal').classList.remove('hidden');
+            document.getElementById('preview-modal').classList.add('flex');
+            document.getElementById('preview-iframe').srcdoc = renderCode;
+        }
+
+        function closePreview() {
+            document.getElementById('preview-modal').classList.add('hidden');
+            document.getElementById('preview-modal').classList.remove('flex');
+            document.getElementById('preview-iframe').srcdoc = '';
+        }
+
+        function refreshPreview() {
+            if (currentRenderCode) document.getElementById('preview-iframe').srcdoc = currentRenderCode;
+        }
+
+        window.onload = loadSessions;
+    </script>
+</body>
+</html>
+
