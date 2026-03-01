@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>anyGem - Super Agent v77.0 (Voice & PPTX Edition)</title>
+    <title>anyGem - Super Agent v78.0 (Continuous Voice Edition)</title>
     
     <link rel="preconnect" href="https://cdn.tailwindcss.com">
     <link rel="preconnect" href="https://cdn.jsdelivr.net">
@@ -98,7 +98,7 @@
             </div>
         </div>
 
-        <div class="p-4 border-t border-[#333] text-xs text-gray-500 text-center font-mono shrink-0">v77.0 Voice Activated</div>
+        <div class="p-4 border-t border-[#333] text-xs text-gray-500 text-center font-mono shrink-0">v78.0 Continuous Voice</div>
     </aside>
 
     <main class="flex-1 flex flex-col relative bg-[#131314] overflow-hidden w-full">
@@ -113,7 +113,7 @@
                 <div class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center shadow-lg shrink-0"><span class="material-symbols-rounded text-white">smart_toy</span></div>
                 <div class="flex-1">
                     <h2 class="text-xl sm:text-2xl font-bold text-white mb-2">我是您的 anyGem 代理人</h2>
-                    <p class="text-gray-400 text-sm sm:text-base leading-relaxed">我已準備好協助您處理開發、簡報與文件。現在，您可以開啟下方的「語音播報」，或按下麥克風與我對話！</p>
+                    <p class="text-gray-400 text-sm sm:text-base leading-relaxed">我已準備好協助您。您可以開啟下方的「⚡ 連續對話」與我進行免持的語音交談，只要您講完話停頓一下，我就會自動回覆！</p>
                 </div>
             </div>
         </div>
@@ -142,14 +142,14 @@
                 </div>
 
                 <div class="bg-[#1e1f22] rounded-2xl border border-[#333] shadow-[0_-10px_40px_rgba(0,0,0,0.5)] focus-within:border-blue-500 transition-all p-1.5 sm:p-2 mx-1 sm:mx-0">
-                    <div class="flex items-center flex-wrap gap-4 px-2 sm:px-3 mb-1 sm:mb-2 pt-1 border-b border-[#333] pb-1.5 sm:pb-2">
+                    <div class="flex items-center flex-wrap gap-3 sm:gap-4 px-2 sm:px-3 mb-1 sm:mb-2 pt-1 border-b border-[#333] pb-1.5 sm:pb-2">
                         
                         <!-- 連網搜尋開關 -->
                         <label class="relative inline-flex items-center cursor-pointer">
                             <input type="checkbox" id="web-search-toggle" class="sr-only peer">
                             <div class="w-8 h-4 bg-gray-600 rounded-full peer peer-checked:bg-blue-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:after:translate-x-full"></div>
                             <span class="ml-2 text-xs font-medium text-gray-400 peer-checked:text-blue-400 flex items-center gap-1">
-                                <span class="material-symbols-rounded text-[14px] sm:text-sm">language</span> 連網搜尋
+                                <span class="material-symbols-rounded text-[14px] sm:text-sm">language</span> 搜尋
                             </span>
                         </label>
 
@@ -158,16 +158,25 @@
                             <input type="checkbox" id="auto-image-toggle" class="sr-only peer">
                             <div class="w-8 h-4 bg-gray-600 rounded-full peer peer-checked:bg-pink-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:after:translate-x-full"></div>
                             <span class="ml-2 text-xs font-medium text-gray-400 peer-checked:text-pink-400 flex items-center gap-1">
-                                <span class="material-symbols-rounded text-[14px] sm:text-sm">imagesmode</span> 簡報配圖
+                                <span class="material-symbols-rounded text-[14px] sm:text-sm">imagesmode</span> 配圖
                             </span>
                         </label>
 
-                        <!-- ✨ 新增：語音播報開關 -->
-                        <label class="relative inline-flex items-center cursor-pointer ml-auto sm:ml-0">
+                        <!-- 語音播報開關 -->
+                        <label class="relative inline-flex items-center cursor-pointer">
                             <input type="checkbox" id="voice-output-toggle" class="sr-only peer">
                             <div class="w-8 h-4 bg-gray-600 rounded-full peer peer-checked:bg-green-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:after:translate-x-full"></div>
                             <span class="ml-2 text-xs font-medium text-gray-400 peer-checked:text-green-400 flex items-center gap-1">
-                                <span class="material-symbols-rounded text-[14px] sm:text-sm">record_voice_over</span> 語音播報
+                                <span class="material-symbols-rounded text-[14px] sm:text-sm">volume_up</span> 播報
+                            </span>
+                        </label>
+
+                        <!-- ✨ 新增：連續對話模式開關 -->
+                        <label class="relative inline-flex items-center cursor-pointer ml-auto sm:ml-0">
+                            <input type="checkbox" id="continuous-mode-toggle" class="sr-only peer">
+                            <div class="w-8 h-4 bg-gray-600 rounded-full peer peer-checked:bg-yellow-500 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:after:translate-x-full"></div>
+                            <span class="ml-2 text-xs font-medium text-gray-400 peer-checked:text-yellow-400 flex items-center gap-1">
+                                <span class="material-symbols-rounded text-[14px] sm:text-sm">all_inclusive</span> 連續對話
                             </span>
                         </label>
 
@@ -178,12 +187,12 @@
                         <button onclick="document.getElementById('file-upload').click()" class="p-2 sm:p-3 shrink-0 text-gray-400 hover:text-white rounded-xl transition-colors"><span class="material-symbols-rounded block">attach_file</span></button>
                         <input type="file" id="file-upload" class="hidden" onchange="handleFileUpload(event)" accept="image/*,application/pdf,text/*,.docx,.xlsx,.csv,.pptx">
                         
-                        <!-- ✨ 新增：麥克風輸入按鈕 -->
+                        <!-- 麥克風輸入按鈕 -->
                         <button id="mic-btn" type="button" onclick="toggleRecording()" class="p-2 sm:p-3 shrink-0 text-gray-400 hover:text-white rounded-xl transition-all" title="點擊開始說話">
                             <span class="material-symbols-rounded block">mic</span>
                         </button>
 
-                        <textarea id="user-input" rows="1" placeholder="輸入指令，或點擊麥克風說話... (支援中英文)" class="w-full bg-transparent border-none outline-none text-gray-100 py-2.5 sm:py-3 px-1 sm:px-2 resize-none max-h-32 sm:max-h-60 text-base leading-relaxed"></textarea>
+                        <textarea id="user-input" rows="1" placeholder="輸入指令，或開啟「連續對話」直接說話..." class="w-full bg-transparent border-none outline-none text-gray-100 py-2.5 sm:py-3 px-1 sm:px-2 resize-none max-h-32 sm:max-h-60 text-base leading-relaxed"></textarea>
                         
                         <button id="send-btn" class="p-2.5 sm:p-3 shrink-0 bg-white text-black rounded-xl hover:bg-gray-200 transition-all shadow-md flex items-center justify-center">
                             <span class="material-symbols-rounded block">send</span>
@@ -204,9 +213,7 @@
                 link(hrefOrToken, title, text) {
                     let linkHref, linkTitle, linkText;
                     if (typeof hrefOrToken === 'object' && hrefOrToken !== null) {
-                        linkHref = hrefOrToken.href;
-                        linkTitle = hrefOrToken.title;
-                        linkText = hrefOrToken.text;
+                        linkHref = hrefOrToken.href; linkTitle = hrefOrToken.title; linkText = hrefOrToken.text;
                     } else { linkHref = hrefOrToken; linkTitle = title; linkText = text; }
                     const titleAttr = linkTitle ? `title="${linkTitle}"` : '';
                     return `<a href="${linkHref}" ${titleAttr} target="_blank" rel="noopener noreferrer">${linkText}</a>`;
@@ -218,6 +225,7 @@
         let currentImageData = null, currentMimeType = null, currentDocumentText = null, currentDocumentName = null, currentYouTubeId = null;
         let isWaiting = false, currentRenderCode = "";
         let abortController = null; 
+        let silenceTimer = null; // ✨ 用來偵測語音停頓的計時器
 
         const chatContainer = document.getElementById('chat-container');
         const userInput = document.getElementById('user-input');
@@ -257,6 +265,17 @@
                 userInput.value = finalTranscript + interimTranscript;
                 userInput.style.height = 'auto';
                 userInput.style.height = (userInput.scrollHeight > 240 ? 240 : userInput.scrollHeight) + 'px';
+
+                // ✨ 停頓自動發送邏輯 (Silence Detection)
+                if (document.getElementById('continuous-mode-toggle').checked) {
+                    clearTimeout(silenceTimer);
+                    silenceTimer = setTimeout(() => {
+                        if (isRecording && userInput.value.trim() !== '') {
+                            stopRecording();
+                            sendMessage();
+                        }
+                    }, 1500); // 使用者停頓 1.5 秒後自動送出
+                }
             };
 
             recognition.onerror = function(event) {
@@ -269,51 +288,69 @@
             };
         }
 
+        function startRecording() {
+            if (!recognition) return;
+            if (!isRecording) {
+                finalTranscript = userInput.value;
+                try { recognition.start(); } catch(e) {} 
+            }
+        }
+
         function toggleRecording() {
             if (!recognition) {
                 alert('您的瀏覽器不支援語音輸入，請使用 Google Chrome、Edge 或 Safari。');
                 return;
             }
             if (isRecording) {
-                recognition.stop();
+                stopRecording();
             } else {
-                finalTranscript = userInput.value;
-                recognition.start();
+                startRecording();
             }
         }
 
         function stopRecording() {
             isRecording = false;
+            clearTimeout(silenceTimer);
             const micBtn = document.getElementById('mic-btn');
             micBtn.classList.remove('recording-pulse');
             micBtn.classList.add('text-gray-400');
-            if (recognition) recognition.stop();
+            if (recognition) {
+                try { recognition.stop(); } catch(e) {}
+            }
         }
 
         // --- 語音合成播報 (TTS) ---
-        function speakText(text) {
-            if (!document.getElementById('voice-output-toggle').checked) return;
-            if (!window.speechSynthesis) return;
-            window.speechSynthesis.cancel(); // 停止上一句話
+        // 回傳 Boolean，代表是否有進行語音播報
+        function speakText(text, isAutoPlay = false) {
+            // 若為自動播報且開關未開啟，則不播報
+            if (isAutoPlay && !document.getElementById('voice-output-toggle').checked) return false;
+            if (!window.speechSynthesis) return false;
+            window.speechSynthesis.cancel(); 
 
-            // 1. 過濾干擾文字 (程式碼、網址、Markdown 符號)
             let cleanText = text.replace(/```[\s\S]*?```/g, ''); 
             cleanText = cleanText.replace(/https?:\/\/[^\s]+/g, '網址'); 
             cleanText = cleanText.replace(/[*_#`~|]/g, ''); 
             cleanText = cleanText.trim();
-            if (!cleanText) return;
+            if (!cleanText) return false;
 
             let utterance = new SpeechSynthesisUtterance(cleanText);
             
-            // 2. 智慧語言偵測 (包含中文即用中文播，否則用美式英文)
             if (/[\u4e00-\u9fa5]/.test(cleanText)) {
-                utterance.lang = 'zh-TW';
-                utterance.rate = 1.05; // 中文唸稍微快一點比較自然
+                utterance.lang = 'zh-TW'; utterance.rate = 1.05;
             } else {
-                utterance.lang = 'en-US';
-                utterance.rate = 1.0;
+                utterance.lang = 'en-US'; utterance.rate = 1.0;
+            }
+            
+            // ✨ 如果是自動播報且有開連續對話，播完後自動喚醒麥克風
+            if (isAutoPlay) {
+                utterance.onend = function() {
+                    if (document.getElementById('continuous-mode-toggle').checked && !isWaiting) {
+                        startRecording();
+                    }
+                };
             }
             window.speechSynthesis.speak(utterance);
+            return true;
         }
 
         // ==== 各種檔案解析引擎懶加載 ====
@@ -321,53 +358,41 @@
         async function loadPdfJs() {
             if (pdfjsLibLoaded) return;
             return new Promise((resolve, reject) => {
-                const script = document.createElement('script');
-                script.src = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
+                const script = document.createElement('script'); script.src = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
                 script.onload = () => { pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'; pdfjsLibLoaded = true; resolve(); };
                 script.onerror = reject; document.head.appendChild(script);
             });
         }
-
         let mammothLoaded = false;
         async function loadMammoth() {
             if (mammothLoaded) return;
             return new Promise((resolve, reject) => {
-                const script = document.createElement('script');
-                script.src = "https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js";
+                const script = document.createElement('script'); script.src = "https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js";
                 script.onload = () => { mammothLoaded = true; resolve(); }; script.onerror = reject; document.head.appendChild(script);
             });
         }
-
         let xlsxLoaded = false;
         async function loadXlsx() {
             if (xlsxLoaded) return;
             return new Promise((resolve, reject) => {
-                const script = document.createElement('script');
-                script.src = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
+                const script = document.createElement('script'); script.src = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
                 script.onload = () => { xlsxLoaded = true; resolve(); }; script.onerror = reject; document.head.appendChild(script);
             });
         }
-
         let jszipLoaded = false;
         async function loadJszip() {
             if (jszipLoaded) return;
             return new Promise((resolve, reject) => {
-                const script = document.createElement('script');
-                script.src = "https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js";
+                const script = document.createElement('script'); script.src = "https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js";
                 script.onload = () => { jszipLoaded = true; resolve(); }; script.onerror = reject; document.head.appendChild(script);
             });
         }
 
-        const sidebarDom = document.getElementById('sidebar');
-        const resizerDom = document.getElementById('sidebar-resizer');
-        let isResizing = false;
-
+        const sidebarDom = document.getElementById('sidebar'); const resizerDom = document.getElementById('sidebar-resizer'); let isResizing = false;
         resizerDom.addEventListener('mousedown', (e) => { isResizing = true; document.body.style.cursor = 'col-resize'; document.body.style.userSelect = 'none'; });
         document.addEventListener('mousemove', (e) => {
-            if (!isResizing) return;
-            if (window.innerWidth < 768) { isResizing = false; return; }
-            let newWidth = e.clientX; if (newWidth < 200) newWidth = 200; if (newWidth > window.innerWidth * 0.5) newWidth = window.innerWidth * 0.5;
-            sidebarDom.style.width = newWidth + 'px';
+            if (!isResizing) return; if (window.innerWidth < 768) { isResizing = false; return; }
+            let newWidth = e.clientX; if (newWidth < 200) newWidth = 200; if (newWidth > window.innerWidth * 0.5) newWidth = window.innerWidth * 0.5; sidebarDom.style.width = newWidth + 'px';
         });
         document.addEventListener('mouseup', () => { if (isResizing) { isResizing = false; document.body.style.cursor = ''; document.body.style.userSelect = ''; } });
         window.addEventListener('resize', () => { if (window.innerWidth < 768) { sidebarDom.style.width = ''; } });
@@ -391,24 +416,17 @@
 
         userInput.addEventListener('paste', function(e) {
             const pasteText = (e.clipboardData || window.clipboardData).getData('text');
-            const ytRegex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i;
-            const ytMatch = pasteText.match(ytRegex);
-            
+            const ytRegex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i; const ytMatch = pasteText.match(ytRegex);
             if (ytMatch && ytMatch[1]) {
-                e.preventDefault(); currentYouTubeId = ytMatch[1];
-                document.getElementById('yt-thumbnail').src = `https://img.youtube.com/vi/${currentYouTubeId}/mqdefault.jpg`;
-                document.getElementById('youtube-preview').classList.remove('hidden'); document.getElementById('image-preview').classList.add('hidden'); document.getElementById('doc-preview').classList.add('hidden'); document.getElementById('upload-preview-container').classList.remove('hidden'); document.getElementById('web-search-toggle').checked = true;
-                return;
+                e.preventDefault(); currentYouTubeId = ytMatch[1]; document.getElementById('yt-thumbnail').src = `https://img.youtube.com/vi/${currentYouTubeId}/mqdefault.jpg`;
+                document.getElementById('youtube-preview').classList.remove('hidden'); document.getElementById('image-preview').classList.add('hidden'); document.getElementById('doc-preview').classList.add('hidden'); document.getElementById('upload-preview-container').classList.remove('hidden'); document.getElementById('web-search-toggle').checked = true; return;
             }
             if (e.clipboardData && e.clipboardData.items) {
                 const items = e.clipboardData.items;
                 for (let i = 0; i < items.length; i++) {
                     if (items[i].type.indexOf('image') !== -1) {
                         e.preventDefault(); const file = items[i].getAsFile(); const reader = new FileReader();
-                        reader.onload = (event) => {
-                            currentImageData = event.target.result; currentMimeType = file.type;
-                            document.getElementById('image-preview').src = currentImageData; document.getElementById('image-preview').classList.remove('hidden'); document.getElementById('doc-preview').classList.add('hidden'); document.getElementById('youtube-preview').classList.add('hidden'); document.getElementById('upload-preview-container').classList.remove('hidden');
-                        };
+                        reader.onload = (event) => { currentImageData = event.target.result; currentMimeType = file.type; document.getElementById('image-preview').src = currentImageData; document.getElementById('image-preview').classList.remove('hidden'); document.getElementById('doc-preview').classList.add('hidden'); document.getElementById('youtube-preview').classList.add('hidden'); document.getElementById('upload-preview-container').classList.remove('hidden'); };
                         reader.readAsDataURL(file); return; 
                     }
                 }
@@ -420,21 +438,18 @@
         });
 
         userInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                if (window.innerWidth < 768) return;
-                e.preventDefault();
-                if (isWaiting) stopGeneration(); else sendMessage();
-            }
+            if (e.key === 'Enter' && !e.shiftKey) { if (window.innerWidth < 768) return; e.preventDefault(); if (isWaiting) stopGeneration(); else sendMessage(); }
         });
 
         async function sendMessage() {
+            clearTimeout(silenceTimer); // 清除停頓計時器
+            stopRecording(); // 強制停止錄音
+
             const text = userInput.value.trim();
             if (!text && !currentImageData && !currentDocumentText && !currentYouTubeId) return;
             if (isWaiting) return;
 
-            // 送出時停止錄音與播報
-            stopRecording();
-            if (window.speechSynthesis) window.speechSynthesis.cancel();
+            if (window.speechSynthesis) window.speechSynthesis.cancel(); // AI立刻閉嘴
 
             const isWebSearchEnabled = document.getElementById('web-search-toggle').checked;
             const isAutoImageEnabled = document.getElementById('auto-image-toggle').checked;
@@ -467,6 +482,14 @@
                 if (data.status === "error") throw new Error(data.error || "伺服器發生未知錯誤");
                 if (data.reply) {
                    appendMessage('ai', data.reply, data.image ? `data:${data.mime};base64,${data.image}` : null, data.model);
+                   
+                   // ✨ 獨立處理自動播報
+                   const willSpeak = speakText(data.reply, true);
+                   
+                   // 如果沒有發出聲音（例如回傳的都是程式碼），但有開連續對話，則在此處手動喚醒麥克風
+                   if (!willSpeak && document.getElementById('continuous-mode-toggle').checked) {
+                       setTimeout(startRecording, 500);
+                   }
                 }
                 loadSessions(); 
             } catch (err) {
@@ -483,44 +506,25 @@
             const reader = new FileReader(); const ext = file.name.split('.').pop().toLowerCase();
             
             if (file.type.startsWith('image/')) {
-                reader.onload = (e) => {
-                    currentImageData = e.target.result; currentMimeType = file.type;
-                    document.getElementById('image-preview').src = currentImageData; document.getElementById('image-preview').classList.remove('hidden'); document.getElementById('doc-preview').classList.add('hidden'); document.getElementById('youtube-preview').classList.add('hidden'); document.getElementById('upload-preview-container').classList.remove('hidden');
-                }; reader.readAsDataURL(file);
+                reader.onload = (e) => { currentImageData = e.target.result; currentMimeType = file.type; document.getElementById('image-preview').src = currentImageData; document.getElementById('image-preview').classList.remove('hidden'); document.getElementById('doc-preview').classList.add('hidden'); document.getElementById('youtube-preview').classList.add('hidden'); document.getElementById('upload-preview-container').classList.remove('hidden'); }; reader.readAsDataURL(file);
             } else if (file.type === 'application/pdf' || ext === 'pdf') {
                 const loadingId = appendLoading();
                 try {
                     await loadPdfJs();
-                    reader.onload = async (e) => {
-                        try {
-                            const pdf = await pdfjsLib.getDocument(new Uint8Array(e.target.result)).promise; let text = "";
-                            for (let i = 1; i <= pdf.numPages; i++) { const page = await pdf.getPage(i); const content = await page.getTextContent(); text += content.items.map(s => s.str).join(' ') + "\n"; }
-                            setDocPayload(file.name, text);
-                        } catch (err) { alert("PDF 解析失敗"); } finally { removeLoading(loadingId); }
-                    }; reader.readAsArrayBuffer(file);
-                } catch (err) { removeLoading(loadingId); alert("載入 PDF 引擎失敗，請檢查網路連線。"); }
+                    reader.onload = async (e) => { try { const pdf = await pdfjsLib.getDocument(new Uint8Array(e.target.result)).promise; let text = ""; for (let i = 1; i <= pdf.numPages; i++) { const page = await pdf.getPage(i); const content = await page.getTextContent(); text += content.items.map(s => s.str).join(' ') + "\n"; } setDocPayload(file.name, text); } catch (err) { alert("PDF 解析失敗"); } finally { removeLoading(loadingId); } }; reader.readAsArrayBuffer(file);
+                } catch (err) { removeLoading(loadingId); alert("載入 PDF 引擎失敗"); }
             } else if (ext === 'docx') {
                 const loadingId = appendLoading();
                 try {
                     await loadMammoth();
-                    reader.onload = async (e) => {
-                        try { const result = await mammoth.extractRawText({ arrayBuffer: e.target.result }); setDocPayload(file.name, result.value); } catch(err) { alert("Word 解析失敗"); } finally { removeLoading(loadingId); }
-                    }; reader.readAsArrayBuffer(file);
-                } catch (err) { removeLoading(loadingId); alert("載入 Word 引擎失敗。"); }
+                    reader.onload = async (e) => { try { const result = await mammoth.extractRawText({ arrayBuffer: e.target.result }); setDocPayload(file.name, result.value); } catch(err) { alert("Word 解析失敗"); } finally { removeLoading(loadingId); } }; reader.readAsArrayBuffer(file);
+                } catch (err) { removeLoading(loadingId); alert("載入 Word 引擎失敗"); }
             } else if (ext === 'xlsx' || ext === 'csv') {
                 const loadingId = appendLoading();
                 try {
                     await loadXlsx();
-                    reader.onload = (e) => {
-                        try {
-                            const workbook = XLSX.read(e.target.result, { type: 'array' }); let text = "";
-                            workbook.SheetNames.forEach(sheetName => {
-                                text += `\n--- 表單: ${sheetName} ---\n`; let csvData = XLSX.utils.sheet_to_csv(workbook.Sheets[sheetName]);
-                                const CHAR_LIMIT = 500000; if (csvData.length > CHAR_LIMIT) { text += csvData.substring(0, CHAR_LIMIT) + "\n\n...[⚠️ 檔案極大，已自動截斷最後部分]..."; } else { text += csvData; }
-                            }); setDocPayload(file.name, text);
-                        } catch(err) { alert("Excel 解析失敗"); } finally { removeLoading(loadingId); }
-                    }; reader.readAsArrayBuffer(file);
-                } catch (err) { removeLoading(loadingId); alert("載入 Excel 引擎失敗。"); }
+                    reader.onload = (e) => { try { const workbook = XLSX.read(e.target.result, { type: 'array' }); let text = ""; workbook.SheetNames.forEach(sheetName => { text += `\n--- 表單: ${sheetName} ---\n`; let csvData = XLSX.utils.sheet_to_csv(workbook.Sheets[sheetName]); const CHAR_LIMIT = 500000; if (csvData.length > CHAR_LIMIT) { text += csvData.substring(0, CHAR_LIMIT) + "\n\n...[⚠️ 檔案極大，已自動截斷最後部分]..."; } else { text += csvData; } }); setDocPayload(file.name, text); } catch(err) { alert("Excel 解析失敗"); } finally { removeLoading(loadingId); } }; reader.readAsArrayBuffer(file);
+                } catch (err) { removeLoading(loadingId); alert("載入 Excel 引擎失敗"); }
             } else if (ext === 'pptx') {
                 const loadingId = appendLoading();
                 try {
@@ -528,32 +532,19 @@
                     reader.onload = async (e) => {
                         try {
                             const zip = new JSZip(); const loadedZip = await zip.loadAsync(e.target.result); let text = `【系統解析：簡報檔名 ${file.name}】\n\n`;
-                            const slideFiles = Object.keys(loadedZip.files).filter(name => name.match(/^ppt\/slides\/slide\d+\.xml$/));
-                            const notesFiles = Object.keys(loadedZip.files).filter(name => name.match(/^ppt\/notesSlides\/notesSlide\d+\.xml$/));
+                            const slideFiles = Object.keys(loadedZip.files).filter(name => name.match(/^ppt\/slides\/slide\d+\.xml$/)); const notesFiles = Object.keys(loadedZip.files).filter(name => name.match(/^ppt\/notesSlides\/notesSlide\d+\.xml$/));
                             const sortRegex = /(\d+)\.xml$/; slideFiles.sort((a, b) => parseInt(a.match(sortRegex)?.[1] || '0') - parseInt(b.match(sortRegex)?.[1] || '0'));
                             const parser = new DOMParser();
-
                             for (const slidePath of slideFiles) {
                                 const slideNum = slidePath.match(sortRegex)?.[1]; text += `--- 第 ${slideNum} 頁 ---\n`;
                                 const slideXmlString = await loadedZip.file(slidePath).async("string");
-                                if (slideXmlString) {
-                                    const xmlDoc = parser.parseFromString(slideXmlString, "text/xml"); const textNodes = xmlDoc.getElementsByTagName("a:t");
-                                    let extractedText = ""; for (let i = 0; i < textNodes.length; i++) extractedText += textNodes[i].textContent + " ";
-                                    text += `[投影片內容]:\n${extractedText.trim()}\n`;
-                                }
+                                if (slideXmlString) { const xmlDoc = parser.parseFromString(slideXmlString, "text/xml"); const textNodes = xmlDoc.getElementsByTagName("a:t"); let extractedText = ""; for (let i = 0; i < textNodes.length; i++) extractedText += textNodes[i].textContent + " "; text += `[投影片內容]:\n${extractedText.trim()}\n`; }
                                 const notePath = `ppt/notesSlides/notesSlide${slideNum}.xml`;
-                                if (notesFiles.includes(notePath)) {
-                                    const noteXmlString = await loadedZip.file(notePath).async("string");
-                                    if (noteXmlString) {
-                                        const xmlDoc = parser.parseFromString(noteXmlString, "text/xml"); const textNodes = xmlDoc.getElementsByTagName("a:t");
-                                        let extractedText = ""; for (let i = 0; i < textNodes.length; i++) extractedText += textNodes[i].textContent + " ";
-                                        if (extractedText.trim()) text += `[講者備忘錄]:\n${extractedText.trim()}\n`;
-                                    }
-                                } text += `\n`;
+                                if (notesFiles.includes(notePath)) { const noteXmlString = await loadedZip.file(notePath).async("string"); if (noteXmlString) { const xmlDoc = parser.parseFromString(noteXmlString, "text/xml"); const textNodes = xmlDoc.getElementsByTagName("a:t"); let extractedText = ""; for (let i = 0; i < textNodes.length; i++) extractedText += textNodes[i].textContent + " "; if (extractedText.trim()) text += `[講者備忘錄]:\n${extractedText.trim()}\n`; } } text += `\n`;
                             } setDocPayload(file.name, text);
-                        } catch (err) { alert("PPTX 解析失敗，可能檔案損毀或非標準格式。"); } finally { removeLoading(loadingId); }
+                        } catch (err) { alert("PPTX 解析失敗"); } finally { removeLoading(loadingId); }
                     }; reader.readAsArrayBuffer(file);
-                } catch (err) { removeLoading(loadingId); alert("載入 ZIP 引擎失敗。"); }
+                } catch (err) { removeLoading(loadingId); alert("載入 ZIP 引擎失敗"); }
             } else {
                 reader.onload = (e) => setDocPayload(file.name, e.target.result); reader.readAsText(file);
             }
@@ -570,35 +561,19 @@
         }
 
         function appendMessage(role, text, imageSrc = null, model = null) {
-            const isAI = role === 'ai';
-            const wrap = document.createElement('div');
-            wrap.className = `flex gap-3 sm:gap-4 max-w-4xl mx-auto w-full group ${!isAI ? 'flex-row-reverse' : ''}`;
-            
-            const avatar = `<div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center shrink-0 shadow-lg ${isAI ? 'bg-blue-600' : 'bg-gray-700'}">
-                <span class="material-symbols-rounded text-white text-[18px] sm:text-xl">${isAI ? 'smart_toy' : 'person'}</span>
-            </div>`;
-
+            const isAI = role === 'ai'; const wrap = document.createElement('div'); wrap.className = `flex gap-3 sm:gap-4 max-w-4xl mx-auto w-full group ${!isAI ? 'flex-row-reverse' : ''}`;
+            const avatar = `<div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center shrink-0 shadow-lg ${isAI ? 'bg-blue-600' : 'bg-gray-700'}"><span class="material-symbols-rounded text-white text-[18px] sm:text-xl">${isAI ? 'smart_toy' : 'person'}</span></div>`;
             let body = `<div class="flex-1 ${!isAI ? 'text-right' : ''} space-y-2 max-w-[90%] sm:max-w-[85%] relative min-w-0">`;
             if (imageSrc) body += `<img src="${imageSrc}" class="rounded-xl border border-[#333] mb-2 max-w-full">`;
             if (text) body += `<div class="prose prose-invert text-gray-200 bg-[#1e1f22] p-4 sm:p-5 rounded-2xl rounded-tl-none shadow-sm text-sm sm:text-base">${isAI ? marked.parse(text) : text.replace(/\n/g, '<br>')}</div>`;
-            
-            if (isAI && text) {
-                body += `<div class="flex items-center gap-2 mt-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                    <button class="copy-btn p-1.5 text-gray-400 hover:text-white hover:bg-[#333] rounded-md" title="複製"><span class="material-symbols-rounded text-[16px] sm:text-[18px]">content_copy</span></button>
-                    <button class="speak-btn p-1.5 text-gray-400 hover:text-green-400 hover:bg-[#333] rounded-md" title="朗讀此訊息"><span class="material-symbols-rounded text-[16px] sm:text-[18px]">volume_up</span></button>
-                </div>`;
-            }
-            body += `</div>`;
-            wrap.innerHTML = avatar + body;
-            chatContainer.appendChild(wrap);
+            if (isAI && text) { body += `<div class="flex items-center gap-2 mt-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"><button class="copy-btn p-1.5 text-gray-400 hover:text-white hover:bg-[#333] rounded-md" title="複製"><span class="material-symbols-rounded text-[16px] sm:text-[18px]">content_copy</span></button><button class="speak-btn p-1.5 text-gray-400 hover:text-green-400 hover:bg-[#333] rounded-md" title="朗讀此訊息"><span class="material-symbols-rounded text-[16px] sm:text-[18px]">volume_up</span></button></div>`; }
+            body += `</div>`; wrap.innerHTML = avatar + body; chatContainer.appendChild(wrap);
 
             if (isAI) {
                 wrap.querySelectorAll('pre code').forEach(code => {
                     const lang = code.className;
                     if (lang.includes('language-html') || lang.includes('language-jsx') || lang.includes('language-javascript')) {
-                        const btn = document.createElement('button');
-                        btn.className = "absolute top-2 sm:top-3 right-2 sm:right-3 bg-blue-600 hover:bg-blue-500 text-white text-[10px] sm:text-xs px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg flex items-center gap-1 shadow-lg";
-                        btn.innerHTML = '<span class="material-symbols-rounded text-[12px] sm:text-sm">play_circle</span> 預覽';
+                        const btn = document.createElement('button'); btn.className = "absolute top-2 sm:top-3 right-2 sm:right-3 bg-blue-600 hover:bg-blue-500 text-white text-[10px] sm:text-xs px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg flex items-center gap-1 shadow-lg"; btn.innerHTML = '<span class="material-symbols-rounded text-[12px] sm:text-sm">play_circle</span> 預覽';
                         btn.onclick = () => openPreview(code.innerText); code.parentElement.appendChild(btn);
                     }
                 });
@@ -606,83 +581,47 @@
 
             if (isAI && text) {
                 const copyBtn = wrap.querySelector('.copy-btn');
-                copyBtn.onclick = () => {
-                    navigator.clipboard.writeText(text).then(() => {
-                        const icon = copyBtn.querySelector('.material-symbols-rounded');
-                        icon.innerText = 'check'; icon.classList.add('text-green-400');
-                        setTimeout(() => { icon.innerText = 'content_copy'; icon.classList.remove('text-green-400'); }, 2000);
-                    });
-                };
+                copyBtn.onclick = () => { navigator.clipboard.writeText(text).then(() => { const icon = copyBtn.querySelector('.material-symbols-rounded'); icon.innerText = 'check'; icon.classList.add('text-green-400'); setTimeout(() => { icon.innerText = 'content_copy'; icon.classList.remove('text-green-400'); }, 2000); }); };
                 
                 const speakBtn = wrap.querySelector('.speak-btn');
-                speakBtn.onclick = () => {
-                    // 如果手動點擊單則訊息的播放，強制播放（無視開關）
-                    const tempToggle = document.getElementById('voice-output-toggle').checked;
-                    document.getElementById('voice-output-toggle').checked = true;
-                    speakText(text);
-                    document.getElementById('voice-output-toggle').checked = tempToggle;
-                };
-
-                // 自動播報
-                speakText(text);
+                speakBtn.onclick = () => { speakText(text, false); }; // 手動點擊播放不觸發自動喚醒
             }
             scrollToBottom();
         }
 
         function appendLoading() {
-            const id = 'loader-' + Date.now();
-            const div = document.createElement('div');
-            div.id = id; div.className = "flex gap-3 sm:gap-4 max-w-4xl mx-auto w-full";
-            div.innerHTML = `<div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-blue-600 flex items-center justify-center shrink-0 animate-pulse"><span class="material-symbols-rounded text-white text-[18px] sm:text-xl">hourglass_empty</span></div>
-                <div class="pt-1.5 sm:pt-3 flex gap-2 items-center text-gray-500 text-xs sm:text-sm italic typing-indicator">代理人正忙碌中<span></span><span></span><span></span></div>`;
+            const id = 'loader-' + Date.now(); const div = document.createElement('div'); div.id = id; div.className = "flex gap-3 sm:gap-4 max-w-4xl mx-auto w-full";
+            div.innerHTML = `<div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-blue-600 flex items-center justify-center shrink-0 animate-pulse"><span class="material-symbols-rounded text-white text-[18px] sm:text-xl">hourglass_empty</span></div><div class="pt-1.5 sm:pt-3 flex gap-2 items-center text-gray-500 text-xs sm:text-sm italic typing-indicator">代理人正忙碌中<span></span><span></span><span></span></div>`;
             chatContainer.appendChild(div); scrollToBottom(); return id;
         }
 
         function removeLoading(id) { const el = document.getElementById(id); if (el) el.remove(); }
         function scrollToBottom() { chatContainer.scrollTop = chatContainer.scrollHeight; }
         function generateUUID() { return 'xxxx-4xxx-yxxx'.replace(/[xy]/g, c => (c === 'x' ? (Math.random() * 16 | 0) : (Math.random() * 16 | 0 & 0x3 | 0x8)).toString(16)); }
-        
         function toggleSidebar() { const sidebar = document.getElementById('sidebar'); const overlay = document.getElementById('sidebar-overlay'); sidebar.classList.toggle('-translate-x-full'); overlay.classList.toggle('hidden'); }
         
         function startNewSession() {
             currentSessionId = generateUUID(); chatContainer.innerHTML = '';
-            appendMessage('ai', "您好！已為您開啟新的對話。\n現在您可以開啟下方的「**語音播報**」，或按下「**麥克風**」與我進行中英文語音對話囉！");
+            appendMessage('ai', "您好！已為您開啟新的對話。\n開啟「⚡ **連續對話**」模式後，只要點一次麥克風，您就能跟我進行免持的雙向交談，我會在您停頓時自動回覆！");
             if (window.innerWidth < 768) toggleSidebar(); loadSessions();
         }
 
         async function switchSession(id, title) {
             if (id === currentSessionId && chatContainer.children.length > 1) return;
-            currentSessionId = id; document.getElementById('mobile-title').innerText = title;
-            chatContainer.innerHTML = ''; const loadingId = appendLoading();
+            currentSessionId = id; document.getElementById('mobile-title').innerText = title; chatContainer.innerHTML = ''; const loadingId = appendLoading();
             if (window.innerWidth < 768) toggleSidebar();
-            try {
-                const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ mode: 'system', action: 'load_session', session_id: id }) });
-                const data = await res.json(); removeLoading(loadingId);
-                let logsData = data.logs || [];
-                if (Array.isArray(logsData)) { logsData.forEach(l => appendMessage(l.role === 'ai' ? 'ai' : 'user', l.text)); }
-                loadSessions();
-            } catch (e) { console.error(e); }
+            try { const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ mode: 'system', action: 'load_session', session_id: id }) }); const data = await res.json(); removeLoading(loadingId); let logsData = data.logs || []; if (Array.isArray(logsData)) { logsData.forEach(l => appendMessage(l.role === 'ai' ? 'ai' : 'user', l.text)); } loadSessions(); } catch (e) { console.error(e); }
         }
 
         async function loadSessions() {
             try {
-                const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ mode: 'system', action: 'get_session_list' }) });
-                const data = await res.json(); const list = document.getElementById('session-list'); list.innerHTML = '';
-                if (data && data.status === "success" && !data.sessions) return;
+                const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ mode: 'system', action: 'get_session_list' }) }); const data = await res.json(); const list = document.getElementById('session-list'); list.innerHTML = '';
                 if (!data || !data.sessions || !Array.isArray(data.sessions)) return;
                 data.sessions.forEach(s => {
                     const isActive = s.id === currentSessionId; const isPinned = s.pinned; const item = document.createElement('div');
                     item.className = `group flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all ${isActive ? 'active-session' : 'text-gray-400 hover:bg-[#2a2b2f] hover:text-white'}`;
                     const iconName = isPinned ? 'push_pin' : (isActive ? 'chat_bubble' : 'chat');
-                    item.innerHTML = `<div class="flex items-center gap-3 truncate flex-1 min-w-0">
-                        <span class="material-symbols-rounded text-lg shrink-0 ${isPinned ? 'pinned-icon' : ''}">${iconName}</span>
-                        <span class="truncate text-sm font-medium tracking-wide">${s.title}</span>
-                    </div>
-                    <div class="flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 shrink-0 ml-2 transition-opacity">
-                        <button class="p-1 pin-btn ${isPinned ? 'text-blue-500' : ''} hover:bg-[#333] rounded-md transition-colors"><span class="material-symbols-rounded text-[16px]">push_pin</span></button>
-                        <button class="p-1 edit-btn hover:text-blue-400 hover:bg-[#333] rounded-md transition-colors"><span class="material-symbols-rounded text-[16px]">edit</span></button>
-                        <button class="p-1 del-btn hover:text-red-400 hover:bg-[#333] rounded-md transition-colors"><span class="material-symbols-rounded text-[16px]">delete</span></button>
-                    </div>`;
+                    item.innerHTML = `<div class="flex items-center gap-3 truncate flex-1 min-w-0"><span class="material-symbols-rounded text-lg shrink-0 ${isPinned ? 'pinned-icon' : ''}">${iconName}</span><span class="truncate text-sm font-medium tracking-wide">${s.title}</span></div><div class="flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 shrink-0 ml-2 transition-opacity"><button class="p-1 pin-btn ${isPinned ? 'text-blue-500' : ''} hover:bg-[#333] rounded-md transition-colors"><span class="material-symbols-rounded text-[16px]">push_pin</span></button><button class="p-1 edit-btn hover:text-blue-400 hover:bg-[#333] rounded-md transition-colors"><span class="material-symbols-rounded text-[16px]">edit</span></button><button class="p-1 del-btn hover:text-red-400 hover:bg-[#333] rounded-md transition-colors"><span class="material-symbols-rounded text-[16px]">delete</span></button></div>`;
                     item.onclick = () => switchSession(s.id, s.title);
                     item.querySelector('.pin-btn').onclick = (e) => { e.stopPropagation(); togglePinSession(s.id, isPinned); };
                     item.querySelector('.edit-btn').onclick = (e) => { e.stopPropagation(); renameSession(s.id, s.title); };
