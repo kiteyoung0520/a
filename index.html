@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>anyGem - Super Agent v78.0 (Continuous Voice Edition)</title>
+    <title>anyGem - Super Agent v78.1 (Gentle Voice Edition)</title>
     
     <link rel="preconnect" href="https://cdn.tailwindcss.com">
     <link rel="preconnect" href="https://cdn.jsdelivr.net">
@@ -98,7 +98,7 @@
             </div>
         </div>
 
-        <div class="p-4 border-t border-[#333] text-xs text-gray-500 text-center font-mono shrink-0">v78.0 Continuous Voice</div>
+        <div class="p-4 border-t border-[#333] text-xs text-gray-500 text-center font-mono shrink-0">v78.1 Gentle Voice</div>
     </aside>
 
     <main class="flex-1 flex flex-col relative bg-[#131314] overflow-hidden w-full">
@@ -171,7 +171,7 @@
                             </span>
                         </label>
 
-                        <!-- ✨ 新增：連續對話模式開關 -->
+                        <!-- 連續對話模式開關 -->
                         <label class="relative inline-flex items-center cursor-pointer ml-auto sm:ml-0">
                             <input type="checkbox" id="continuous-mode-toggle" class="sr-only peer">
                             <div class="w-8 h-4 bg-gray-600 rounded-full peer peer-checked:bg-yellow-500 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:after:translate-x-full"></div>
@@ -225,7 +225,7 @@
         let currentImageData = null, currentMimeType = null, currentDocumentText = null, currentDocumentName = null, currentYouTubeId = null;
         let isWaiting = false, currentRenderCode = "";
         let abortController = null; 
-        let silenceTimer = null; // ✨ 用來偵測語音停頓的計時器
+        let silenceTimer = null; 
 
         const chatContainer = document.getElementById('chat-container');
         const userInput = document.getElementById('user-input');
@@ -242,7 +242,7 @@
             recognition = new SpeechRec();
             recognition.continuous = true;
             recognition.interimResults = true;
-            recognition.lang = 'cmn-Hant-TW'; // 預設中文，但能聽懂英文
+            recognition.lang = 'cmn-Hant-TW'; 
 
             recognition.onstart = function() {
                 isRecording = true;
@@ -266,7 +266,7 @@
                 userInput.style.height = 'auto';
                 userInput.style.height = (userInput.scrollHeight > 240 ? 240 : userInput.scrollHeight) + 'px';
 
-                // ✨ 停頓自動發送邏輯 (Silence Detection)
+                // 停頓自動發送邏輯 (Silence Detection)
                 if (document.getElementById('continuous-mode-toggle').checked) {
                     clearTimeout(silenceTimer);
                     silenceTimer = setTimeout(() => {
@@ -274,7 +274,7 @@
                             stopRecording();
                             sendMessage();
                         }
-                    }, 1500); // 使用者停頓 1.5 秒後自動送出
+                    }, 1500); 
                 }
             };
 
@@ -301,11 +301,7 @@
                 alert('您的瀏覽器不支援語音輸入，請使用 Google Chrome、Edge 或 Safari。');
                 return;
             }
-            if (isRecording) {
-                stopRecording();
-            } else {
-                startRecording();
-            }
+            if (isRecording) { stopRecording(); } else { startRecording(); }
         }
 
         function stopRecording() {
@@ -314,15 +310,11 @@
             const micBtn = document.getElementById('mic-btn');
             micBtn.classList.remove('recording-pulse');
             micBtn.classList.add('text-gray-400');
-            if (recognition) {
-                try { recognition.stop(); } catch(e) {}
-            }
+            if (recognition) { try { recognition.stop(); } catch(e) {} }
         }
 
-        // --- 語音合成播報 (TTS) ---
-        // 回傳 Boolean，代表是否有進行語音播報
+        // --- ✨ 語音合成播報 (TTS) - 溫和優化版 ---
         function speakText(text, isAutoPlay = false) {
-            // 若為自動播報且開關未開啟，則不播報
             if (isAutoPlay && !document.getElementById('voice-output-toggle').checked) return false;
             if (!window.speechSynthesis) return false;
             window.speechSynthesis.cancel(); 
@@ -335,13 +327,33 @@
 
             let utterance = new SpeechSynthesisUtterance(cleanText);
             
-            if (/[\u4e00-\u9fa5]/.test(cleanText)) {
-                utterance.lang = 'zh-TW'; utterance.rate = 1.05;
-            } else {
-                utterance.lang = 'en-US'; utterance.rate = 1.0;
-            }
+            // --- 溫和語音調校區 ---
+            const voices = window.speechSynthesis.getVoices();
+            let selectedVoice = null;
             
-            // ✨ 如果是自動播報且有開連續對話，播完後自動喚醒麥克風
+            if (/[\u4e00-\u9fa5]/.test(cleanText)) {
+                // 中文情境
+                utterance.lang = 'zh-TW';
+                utterance.rate = 0.95; // 放慢語速
+                utterance.pitch = 0.95; // 調低音調
+                
+                selectedVoice = voices.find(voice => voice.name.includes('Xiaoxiao') || voice.name.includes('Yating') || (voice.lang === 'zh-TW' && voice.name.includes('Google')));
+                if (!selectedVoice) selectedVoice = voices.find(voice => voice.lang === 'zh-TW');
+            } else {
+                // 英文情境
+                utterance.lang = 'en-US';
+                utterance.rate = 0.9; // 英文放慢
+                utterance.pitch = 0.95;
+                
+                selectedVoice = voices.find(voice => voice.name.includes('Samantha') || (voice.lang === 'en-US' && voice.name.includes('Google')));
+                if (!selectedVoice) selectedVoice = voices.find(voice => voice.lang === 'en-US');
+            }
+
+            if (selectedVoice) {
+                utterance.voice = selectedVoice;
+            }
+            // ------------------------
+            
             if (isAutoPlay) {
                 utterance.onend = function() {
                     if (document.getElementById('continuous-mode-toggle').checked && !isWaiting) {
@@ -351,6 +363,11 @@
             }
             window.speechSynthesis.speak(utterance);
             return true;
+        }
+
+        // 確保聲音列表在網頁載入時能正確抓取 (Chrome 的一個怪癖)
+        if (speechSynthesis.onvoiceschanged !== undefined) {
+            speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
         }
 
         // ==== 各種檔案解析引擎懶加載 ====
@@ -442,14 +459,14 @@
         });
 
         async function sendMessage() {
-            clearTimeout(silenceTimer); // 清除停頓計時器
-            stopRecording(); // 強制停止錄音
+            clearTimeout(silenceTimer); 
+            stopRecording(); 
 
             const text = userInput.value.trim();
             if (!text && !currentImageData && !currentDocumentText && !currentYouTubeId) return;
             if (isWaiting) return;
 
-            if (window.speechSynthesis) window.speechSynthesis.cancel(); // AI立刻閉嘴
+            if (window.speechSynthesis) window.speechSynthesis.cancel(); 
 
             const isWebSearchEnabled = document.getElementById('web-search-toggle').checked;
             const isAutoImageEnabled = document.getElementById('auto-image-toggle').checked;
@@ -483,10 +500,8 @@
                 if (data.reply) {
                    appendMessage('ai', data.reply, data.image ? `data:${data.mime};base64,${data.image}` : null, data.model);
                    
-                   // ✨ 獨立處理自動播報
                    const willSpeak = speakText(data.reply, true);
                    
-                   // 如果沒有發出聲音（例如回傳的都是程式碼），但有開連續對話，則在此處手動喚醒麥克風
                    if (!willSpeak && document.getElementById('continuous-mode-toggle').checked) {
                        setTimeout(startRecording, 500);
                    }
@@ -584,7 +599,7 @@
                 copyBtn.onclick = () => { navigator.clipboard.writeText(text).then(() => { const icon = copyBtn.querySelector('.material-symbols-rounded'); icon.innerText = 'check'; icon.classList.add('text-green-400'); setTimeout(() => { icon.innerText = 'content_copy'; icon.classList.remove('text-green-400'); }, 2000); }); };
                 
                 const speakBtn = wrap.querySelector('.speak-btn');
-                speakBtn.onclick = () => { speakText(text, false); }; // 手動點擊播放不觸發自動喚醒
+                speakBtn.onclick = () => { speakText(text, false); };
             }
             scrollToBottom();
         }
