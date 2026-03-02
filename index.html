@@ -254,6 +254,9 @@
             };
 
             recognition.onresult = function(event) {
+                // 💡 解決殘留問題 1：如果已經呼叫 stopRecording，則忽略後續的 onresult 更新 UI，避免舊字串被寫回清空後的輸入框
+                if (!isRecording) return; 
+
                 let interimTranscript = '';
                 for (let i = event.resultIndex; i < event.results.length; ++i) {
                     if (event.results[i].isFinal) {
@@ -291,8 +294,9 @@
         function startRecording() {
             if (!recognition) return;
             if (!isRecording) {
+                isRecording = true;
                 finalTranscript = userInput.value;
-                try { recognition.start(); } catch(e) {} 
+                try { recognition.start(); } catch(e) { isRecording = false; } 
             }
         }
 
@@ -305,7 +309,7 @@
         }
 
         function stopRecording() {
-            isRecording = false;
+            isRecording = false; // 💡 立即標記為 false，阻斷後續延遲的文字寫入
             clearTimeout(silenceTimer);
             const micBtn = document.getElementById('mic-btn');
             micBtn.classList.remove('recording-pulse');
@@ -484,7 +488,11 @@
                 payloadText = `【指定 YouTube 影片】：https://www.youtube.com/watch?v=${currentYouTubeId}\n\n指令：${payloadText}`;
             }
 
-            userInput.value = ''; userInput.style.height = 'auto';
+            // 💡 解決殘留問題 2：送出後徹底清空輸入框與語音暫存變數
+            userInput.value = ''; 
+            userInput.style.height = 'auto';
+            finalTranscript = ''; 
+
             const imgBase64 = currentImageData ? currentImageData.split(',')[1] : null; const mime = currentMimeType; const finalYoutubeId = currentYouTubeId; 
             clearUpload(); toggleSendButton(true); const loadingId = appendLoading(); abortController = new AbortController(); 
 
