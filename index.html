@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>anyGem - Super Agent v78.1 (Gentle Voice Edition)</title>
+    <title>anyGem - Super Agent v82.2 (Large Text Edition)</title>
     
     <link rel="preconnect" href="https://cdn.tailwindcss.com">
     <link rel="preconnect" href="https://cdn.jsdelivr.net">
@@ -21,12 +21,16 @@
         ::-webkit-scrollbar-thumb:hover { background: #444; }
         
         .prose { max-width: 100%; word-break: break-word; overflow-wrap: break-word; }
-        .prose pre { background-color: #1e1e20; border-radius: 12px; padding: 1.25rem; overflow-x: auto; border: 1px solid #333; margin: 1rem 0; position: relative; max-width: 100%; }
-        .prose code { color: #f87171; background-color: rgba(255,255,255,0.1); padding: 0.2rem 0.4rem; border-radius: 6px; font-size: 0.9em; font-family: 'Fira Code', monospace; }
+        .prose pre { background-color: #1e1e20; border-radius: 12px; padding: 1.25rem; overflow-x: auto; border: 1px solid #333; margin: 1.25rem 0; position: relative; max-width: 100%; }
+        .prose code { color: #f87171; background-color: rgba(255,255,255,0.1); padding: 0.2rem 0.4rem; border-radius: 6px; font-size: 0.85em; font-family: 'Fira Code', monospace; }
         .prose a { color: #8ab4f8; text-decoration: underline; text-underline-offset: 4px; transition: color 0.2s; }
-        .prose h1, .prose h2, .prose h3 { color: #fff; margin-top: 1.5rem; margin-bottom: 0.75rem; font-weight: 600; }
-        .prose p { margin-bottom: 1rem; line-height: 1.7; }
-        .prose img { max-width: 100%; border-radius: 0.75rem; height: auto; }
+        .prose h1, .prose h2, .prose h3 { color: #fff; margin-top: 1.75rem; margin-bottom: 0.75rem; font-weight: 600; line-height: 1.4; }
+        .prose h1 { font-size: 1.6em; }
+        .prose h2 { font-size: 1.4em; }
+        .prose h3 { font-size: 1.2em; }
+        .prose p, .prose ul, .prose ol { margin-bottom: 1.25rem; line-height: 1.8; } /* 加大行高，閱讀更舒適 */
+        .prose li { margin-bottom: 0.5rem; }
+        .prose img { max-width: 100%; border-radius: 0.75rem; height: auto; margin: 1rem 0; }
 
         .typing-indicator span { animation: blink 1.4s infinite both; height: 5px; width: 5px; background-color: #888; border-radius: 50%; display: inline-block; margin: 0 2px; }
         @keyframes blink { 0% { opacity: 0.2; } 20% { opacity: 1; } 100% { opacity: 0.2; } }
@@ -98,7 +102,7 @@
             </div>
         </div>
 
-        <div class="p-4 border-t border-[#333] text-xs text-gray-500 text-center font-mono shrink-0">v78.1 Gentle Voice</div>
+        <div class="p-4 border-t border-[#333] text-xs text-gray-500 text-center font-mono shrink-0">v82.2 Large Text Edition</div>
     </aside>
 
     <main class="flex-1 flex flex-col relative bg-[#131314] overflow-hidden w-full">
@@ -112,8 +116,8 @@
             <div class="max-w-3xl mx-auto flex gap-4 sm:gap-6 w-full">
                 <div class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center shadow-lg shrink-0"><span class="material-symbols-rounded text-white">smart_toy</span></div>
                 <div class="flex-1">
-                    <h2 class="text-xl sm:text-2xl font-bold text-white mb-2">我是您的 anyGem 代理人</h2>
-                    <p class="text-gray-400 text-sm sm:text-base leading-relaxed">我已準備好協助您。您可以開啟下方的「⚡ 連續對話」與我進行免持的語音交談，只要您講完話停頓一下，我就會自動回覆！</p>
+                    <h2 class="text-2xl sm:text-3xl font-bold text-white mb-2">我是您的 anyGem 代理人</h2>
+                    <p class="text-gray-400 text-base sm:text-lg leading-relaxed">我已準備好協助您。您可以開啟下方的「⚡ 連續對話」與我進行免持的語音交談，只要您講完話停頓一下，我就會自動回覆！</p>
                 </div>
             </div>
         </div>
@@ -192,7 +196,7 @@
                             <span class="material-symbols-rounded block">mic</span>
                         </button>
 
-                        <textarea id="user-input" rows="1" placeholder="輸入指令，或開啟「連續對話」直接說話..." class="w-full bg-transparent border-none outline-none text-gray-100 py-2.5 sm:py-3 px-1 sm:px-2 resize-none max-h-32 sm:max-h-60 text-base leading-relaxed"></textarea>
+                        <textarea id="user-input" rows="1" placeholder="輸入指令，或開啟「連續對話」直接說話..." class="w-full bg-transparent border-none outline-none text-gray-100 py-2.5 sm:py-3 px-1 sm:px-2 resize-none max-h-32 sm:max-h-60 text-base sm:text-lg leading-relaxed"></textarea>
                         
                         <button id="send-btn" class="p-2.5 sm:p-3 shrink-0 bg-white text-black rounded-xl hover:bg-gray-200 transition-all shadow-md flex items-center justify-center">
                             <span class="material-symbols-rounded block">send</span>
@@ -254,7 +258,6 @@
             };
 
             recognition.onresult = function(event) {
-                // 💡 解決殘留問題 1：如果已經呼叫 stopRecording，則忽略後續的 onresult 更新 UI，避免舊字串被寫回清空後的輸入框
                 if (!isRecording) return; 
 
                 let interimTranscript = '';
@@ -269,7 +272,6 @@
                 userInput.style.height = 'auto';
                 userInput.style.height = (userInput.scrollHeight > 240 ? 240 : userInput.scrollHeight) + 'px';
 
-                // 停頓自動發送邏輯 (Silence Detection)
                 if (document.getElementById('continuous-mode-toggle').checked) {
                     clearTimeout(silenceTimer);
                     silenceTimer = setTimeout(() => {
@@ -309,7 +311,7 @@
         }
 
         function stopRecording() {
-            isRecording = false; // 💡 立即標記為 false，阻斷後續延遲的文字寫入
+            isRecording = false;
             clearTimeout(silenceTimer);
             const micBtn = document.getElementById('mic-btn');
             micBtn.classList.remove('recording-pulse');
@@ -317,7 +319,7 @@
             if (recognition) { try { recognition.stop(); } catch(e) {} }
         }
 
-        // --- ✨ 語音合成播報 (TTS) - 溫和優化版 ---
+        // --- 語音合成播報 (TTS) - 溫和優化版 ---
         function speakText(text, isAutoPlay = false) {
             if (isAutoPlay && !document.getElementById('voice-output-toggle').checked) return false;
             if (!window.speechSynthesis) return false;
@@ -331,22 +333,19 @@
 
             let utterance = new SpeechSynthesisUtterance(cleanText);
             
-            // --- 溫和語音調校區 ---
             const voices = window.speechSynthesis.getVoices();
             let selectedVoice = null;
             
             if (/[\u4e00-\u9fa5]/.test(cleanText)) {
-                // 中文情境
                 utterance.lang = 'zh-TW';
-                utterance.rate = 0.95; // 放慢語速
-                utterance.pitch = 0.95; // 調低音調
+                utterance.rate = 0.95; 
+                utterance.pitch = 0.95; 
                 
                 selectedVoice = voices.find(voice => voice.name.includes('Xiaoxiao') || voice.name.includes('Yating') || (voice.lang === 'zh-TW' && voice.name.includes('Google')));
                 if (!selectedVoice) selectedVoice = voices.find(voice => voice.lang === 'zh-TW');
             } else {
-                // 英文情境
                 utterance.lang = 'en-US';
-                utterance.rate = 0.9; // 英文放慢
+                utterance.rate = 0.9; 
                 utterance.pitch = 0.95;
                 
                 selectedVoice = voices.find(voice => voice.name.includes('Samantha') || (voice.lang === 'en-US' && voice.name.includes('Google')));
@@ -356,7 +355,6 @@
             if (selectedVoice) {
                 utterance.voice = selectedVoice;
             }
-            // ------------------------
             
             if (isAutoPlay) {
                 utterance.onend = function() {
@@ -369,7 +367,6 @@
             return true;
         }
 
-        // 確保聲音列表在網頁載入時能正確抓取 (Chrome 的一個怪癖)
         if (speechSynthesis.onvoiceschanged !== undefined) {
             speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
         }
@@ -488,7 +485,6 @@
                 payloadText = `【指定 YouTube 影片】：https://www.youtube.com/watch?v=${currentYouTubeId}\n\n指令：${payloadText}`;
             }
 
-            // 💡 解決殘留問題 2：送出後徹底清空輸入框與語音暫存變數
             userInput.value = ''; 
             userInput.style.height = 'auto';
             finalTranscript = ''; 
@@ -588,7 +584,8 @@
             const avatar = `<div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center shrink-0 shadow-lg ${isAI ? 'bg-blue-600' : 'bg-gray-700'}"><span class="material-symbols-rounded text-white text-[18px] sm:text-xl">${isAI ? 'smart_toy' : 'person'}</span></div>`;
             let body = `<div class="flex-1 ${!isAI ? 'text-right' : ''} space-y-2 max-w-[90%] sm:max-w-[85%] relative min-w-0">`;
             if (imageSrc) body += `<img src="${imageSrc}" class="rounded-xl border border-[#333] mb-2 max-w-full">`;
-            if (text) body += `<div class="prose prose-invert text-gray-200 bg-[#1e1f22] p-4 sm:p-5 rounded-2xl rounded-tl-none shadow-sm text-sm sm:text-base">${isAI ? marked.parse(text) : text.replace(/\n/g, '<br>')}</div>`;
+            // ✨ 這裡將 text-sm sm:text-base 加大為 text-base sm:text-lg
+            if (text) body += `<div class="prose prose-invert text-gray-200 bg-[#1e1f22] p-4 sm:p-5 rounded-2xl rounded-tl-none shadow-sm text-base sm:text-lg leading-relaxed">${isAI ? marked.parse(text) : text.replace(/\n/g, '<br>')}</div>`;
             if (isAI && text) { body += `<div class="flex items-center gap-2 mt-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"><button class="copy-btn p-1.5 text-gray-400 hover:text-white hover:bg-[#333] rounded-md" title="複製"><span class="material-symbols-rounded text-[16px] sm:text-[18px]">content_copy</span></button><button class="speak-btn p-1.5 text-gray-400 hover:text-green-400 hover:bg-[#333] rounded-md" title="朗讀此訊息"><span class="material-symbols-rounded text-[16px] sm:text-[18px]">volume_up</span></button></div>`; }
             body += `</div>`; wrap.innerHTML = avatar + body; chatContainer.appendChild(wrap);
 
@@ -614,7 +611,7 @@
 
         function appendLoading() {
             const id = 'loader-' + Date.now(); const div = document.createElement('div'); div.id = id; div.className = "flex gap-3 sm:gap-4 max-w-4xl mx-auto w-full";
-            div.innerHTML = `<div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-blue-600 flex items-center justify-center shrink-0 animate-pulse"><span class="material-symbols-rounded text-white text-[18px] sm:text-xl">hourglass_empty</span></div><div class="pt-1.5 sm:pt-3 flex gap-2 items-center text-gray-500 text-xs sm:text-sm italic typing-indicator">代理人正忙碌中<span></span><span></span><span></span></div>`;
+            div.innerHTML = `<div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-blue-600 flex items-center justify-center shrink-0 animate-pulse"><span class="material-symbols-rounded text-white text-[18px] sm:text-xl">hourglass_empty</span></div><div class="pt-1.5 sm:pt-3 flex gap-2 items-center text-gray-500 text-sm sm:text-base italic typing-indicator">代理人正忙碌中<span></span><span></span><span></span></div>`;
             chatContainer.appendChild(div); scrollToBottom(); return id;
         }
 
