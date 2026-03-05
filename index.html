@@ -98,7 +98,7 @@
                 </a>
             </div>
         </div>
-        <div class="p-4 border-t border-[#333] text-xs text-gray-500 text-center font-mono shrink-0">v86.11 Draw Mode Edition</div>
+        <div class="p-4 border-t border-[#333] text-xs text-gray-500 text-center font-mono shrink-0">v86.11 UI Fixed Edition</div>
     </aside>
 
     <!-- Main Chat Area -->
@@ -165,7 +165,7 @@
                             <!-- 下拉面板 (向上展開) -->
                             <div id="settings-dropdown" class="hidden absolute bottom-full right-0 sm:left-0 mb-3 w-40 bg-[#2a2b2f] border border-[#444] rounded-xl shadow-[0_-10px_40px_rgba(0,0,0,0.5)] p-3 flex flex-col gap-4 z-50">
                                 
-                                <!-- ✨ 單純繪圖開關 -->
+                                <!-- 單純繪圖開關 -->
                                 <label class="relative flex items-center justify-between cursor-pointer group">
                                     <span class="text-xs font-medium text-gray-300 group-hover:text-purple-400 transition-colors flex items-center gap-1.5"><span class="material-symbols-rounded text-[16px]">palette</span> 單純繪圖</span>
                                     <div class="relative">
@@ -321,13 +321,35 @@
         async function loadXlsx() { if(xlsxLoaded) return; return new Promise((r, j) => { let s = document.createElement('script'); s.src = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"; s.onload = () => { xlsxLoaded = true; r(); }; s.onerror = j; document.head.appendChild(s); }); }
         async function loadJszip() { if(jszipLoaded) return; return new Promise((r, j) => { let s = document.createElement('script'); s.src = "https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"; s.onload = () => { jszipLoaded = true; r(); }; s.onerror = j; document.head.appendChild(s); }); }
 
-        // UI 互動
-        const sidebarDom = document.getElementById('sidebar'), resizerDom = document.getElementById('sidebar-resizer');
-        let isResizing = false;
-        resizerDom.addEventListener('mousedown', () => { isResizing = true; document.body.style.cursor = 'col-resize'; document.body.style.userSelect = 'none'; });
-        document.addEventListener('mousemove', (e) => { if (!isResizing || window.innerWidth < 768) return; let nw = Math.max(200, Math.min(e.clientX, window.innerWidth * 0.5)); sidebarDom.style.width = nw + 'px'; });
-        document.addEventListener('mouseup', () => { if(isResizing){ isResizing = false; document.body.style.cursor = ''; document.body.style.userSelect = ''; } });
-        window.addEventListener('resize', () => { if (window.innerWidth < 768) sidebarDom.style.width = ''; });
+        // ✨ UI 互動修復：將 isResizing 綁定到 window 以確保全域有效
+        const sidebarDom = document.getElementById('sidebar');
+        const resizerDom = document.getElementById('sidebar-resizer');
+        window.isResizing = false;
+        
+        if (resizerDom) {
+            resizerDom.addEventListener('mousedown', () => { 
+                window.isResizing = true; 
+                document.body.style.cursor = 'col-resize'; 
+                document.body.style.userSelect = 'none'; 
+            });
+        }
+        
+        document.addEventListener('mousemove', (e) => { 
+            if (!window.isResizing || window.innerWidth < 768) return; 
+            let nw = Math.max(200, Math.min(e.clientX, window.innerWidth * 0.5)); 
+            if (sidebarDom) sidebarDom.style.width = nw + 'px'; 
+        });
+        
+        document.addEventListener('mouseup', () => { 
+            if(window.isResizing){ 
+                window.isResizing = false; 
+                document.body.style.cursor = ''; 
+                document.body.style.userSelect = ''; 
+            } 
+        });
+
+        window.addEventListener('resize', () => { if (window.innerWidth < 768) { if (sidebarDom) sidebarDom.style.width = ''; } });
+        
         function toggleBookmarks() { const l = document.getElementById('bookmark-list'), c = document.getElementById('bookmark-chevron'); l.classList.toggle('hidden'); c.style.transform = l.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(180deg)'; }
         function toggleSendButton(w) { isWaiting = w; sendBtnIcon.innerText = w ? 'stop' : 'send'; sendBtn.className = w ? "p-2.5 sm:p-3 shrink-0 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-all shadow-md flex items-center justify-center" : "p-2.5 sm:p-3 shrink-0 bg-white text-black rounded-xl hover:bg-gray-200 transition-all shadow-md flex items-center justify-center"; sendBtn.onclick = w ? stopGeneration : sendMessage; }
         sendBtn.onclick = sendMessage; function stopGeneration() { if (abortController) { abortController.abort(); abortController = null; } }
@@ -365,7 +387,6 @@
 
             userInput.value = ''; userInput.style.height = 'auto'; finalTranscript = ''; 
             
-            // ✨ 將 draw_mode (繪圖開關狀態) 一併打包進 payload 傳給後端
             const payload = { 
                 message: pText, 
                 session_id: currentSessionId, 
@@ -427,12 +448,19 @@
         async function loadGems() { try { const d = await (await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ mode: 'system', action: 'get_gems' }) })).json(); if (d && d.gems) { currentGemsList = d.gems; const s = document.getElementById('gem-selector'); s.innerHTML = '<option value="">🤖 預設全能助理</option>'; currentGemsList.forEach((g, i) => s.innerHTML += `<option value="${i}">💎 ${g.name}</option>`); } } catch (e) {} }
         async function loadSessions() { try { const d = await (await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ mode: 'system', action: 'get_session_list' }) })).json(); const l = document.getElementById('session-list'); l.innerHTML = ''; if (Array.isArray(d.sessions)) d.sessions.forEach(s => { const act = s.id === currentSessionId, pin = s.pinned, i = document.createElement('div'); i.className = `group flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all ${act ? 'active-session' : 'text-gray-400 hover:bg-[#2a2b2f] hover:text-white'}`; i.innerHTML = `<div class="flex items-center gap-3 truncate flex-1 min-w-0"><span class="material-symbols-rounded text-lg shrink-0 ${pin ? 'pinned-icon' : ''}">${pin ? 'push_pin' : (act ? 'chat_bubble' : 'chat')}</span><span class="truncate text-sm font-medium tracking-wide">${s.title}</span></div><div class="flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 shrink-0 ml-2 transition-opacity"><button class="p-1 pin-btn ${pin ? 'text-blue-500' : ''} hover:bg-[#333] rounded-md transition-colors"><span class="material-symbols-rounded text-[16px]">push_pin</span></button><button class="p-1 edit-btn hover:text-blue-400 hover:bg-[#333] rounded-md transition-colors"><span class="material-symbols-rounded text-[16px]">edit</span></button><button class="p-1 del-btn hover:text-red-400 hover:bg-[#333] rounded-md transition-colors"><span class="material-symbols-rounded text-[16px]">delete</span></button></div>`; i.onclick = () => switchSession(s.id, s.title); i.querySelector('.pin-btn').onclick = (e) => { e.stopPropagation(); fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ mode: 'system', action: 'pin_session', session_id: s.id, is_pinned: !pin }) }).then(loadSessions); }; i.querySelector('.edit-btn').onclick = (e) => { e.stopPropagation(); const n = prompt("重命名：", s.title); if (n && n.trim()) fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ mode: 'system', action: 'rename_session', session_id: s.id, new_title: n }) }).then(loadSessions); }; i.querySelector('.del-btn').onclick = (e) => { e.stopPropagation(); if (confirm("確定要刪除嗎？")) fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ mode: 'system', action: 'delete_session', session_id: s.id }) }).then(() => s.id === currentSessionId ? startNewSession() : loadSessions()); }; l.appendChild(i); }); } catch (e) {} }
 
+        // ✨ UI 破版修復：使用安全的字串拼接與十六進位跳脫字元，保護 HTML 解析器
         function openPreview(code) {
             let rc = code;
             if ((code.includes('export default') || code.includes('import React') || code.includes('className=')) && !(code.trim().toLowerCase().startsWith('<!doctype html') || code.trim().toLowerCase().startsWith('<html'))) {
                 let cc = code.replace(new RegExp('import\\s+.*?from\\s+[\'"].*?[\'"];?', 'g'), '').replace(new RegExp('export\\s+default\\s+function', 'g'), 'function');
                 let cm = code.replace(new RegExp('import\\s+.*?from\\s+[\'"].*?[\'"];?', 'g'), '').match(new RegExp('export\\s+default\\s+function\\s+([A-Za-z0-9_]+)'));
-                rc = `<!DOCTYPE html><html lang="zh-TW"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><script src="https://unpkg.com/react@18/umd/react.production.min.js"><\/script><script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"><\/script><script src="https://unpkg.com/@babel/standalone/babel.min.js"><\/script><script src="https://cdn.tailwindcss.com"><\/script><script src="https://unpkg.com/lucide@latest"><\/script></head><body class="bg-gray-50"><div id="root"></div><script type="text/babel">const { useState, useEffect, useRef, useMemo, useCallback } = React; try { ${cc} const root = ReactDOM.createRoot(document.getElementById('root')); root.render(<${cm ? cm[1] : 'App'} />); setTimeout(() => { if(window.lucide) window.lucide.createIcons(); }, 100); } catch(err) { document.getElementById('root').innerHTML = '<div class="p-4 text-red-700">渲染錯誤:<br>' + err.message + '</div>'; } <\/script></body></html>`;
+                rc = `<!DOCTYPE html><html lang="zh-TW"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">` + 
+                     `<script src="https://unpkg.com/react@18/umd/react.production.min.js">\x3C/script>` + 
+                     `<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js">\x3C/script>` + 
+                     `<script src="https://unpkg.com/@babel/standalone/babel.min.js">\x3C/script>` + 
+                     `<script src="https://cdn.tailwindcss.com">\x3C/script>` + 
+                     `<script src="https://unpkg.com/lucide@latest">\x3C/script>` + 
+                     `</head><body class="bg-gray-50"><div id="root"></div><script type="text/babel">const { useState, useEffect, useRef, useMemo, useCallback } = React; try { ${cc} const root = ReactDOM.createRoot(document.getElementById('root')); root.render(<${cm ? cm[1] : 'App'} />); setTimeout(() => { if(window.lucide) window.lucide.createIcons(); }, 100); } catch(err) { document.getElementById('root').innerHTML = '<div class="p-4 text-red-700">渲染錯誤:<br>' + err.message + '</div>'; } \x3C/script></body></html>`;
             }
             currentRenderCode = rc; document.getElementById('preview-modal').classList.remove('hidden'); document.getElementById('preview-modal').classList.add('flex'); document.getElementById('preview-iframe').srcdoc = rc;
         }
