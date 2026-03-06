@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>anyGem - Super Agent (Dropdown & Draw Edition)</title>
+    <title>anyGem - Super Agent (Ultimate Edition)</title>
     
     <link rel="preconnect" href="https://cdn.tailwindcss.com">
     <link rel="preconnect" href="https://cdn.jsdelivr.net">
@@ -98,7 +98,7 @@
                 </a>
             </div>
         </div>
-        <div class="p-4 border-t border-[#333] text-xs text-gray-500 text-center font-mono shrink-0">v86.13 Time Machine Edition</div>
+        <div class="p-4 border-t border-[#333] text-xs text-gray-500 text-center font-mono shrink-0">v86.14 Ultimate Edition</div>
     </aside>
 
     <!-- Main Chat Area -->
@@ -109,7 +109,7 @@
             <div class="w-10"></div>
         </header>
 
-        <div id="chat-container" class="flex-1 overflow-y-auto overflow-x-hidden px-4 py-6 md:px-12 space-y-6 pb-48 md:pb-40 w-full relative">
+        <div id="chat-container" class="flex-1 overflow-y-auto overflow-x-hidden px-4 py-6 md:px-12 space-y-6 pb-48 md:pb-40 w-full relative scroll-smooth">
             <div class="max-w-3xl mx-auto flex gap-4 sm:gap-6 w-full">
                 <div class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center shadow-lg shrink-0"><span class="material-symbols-rounded text-white">smart_toy</span></div>
                 <div class="flex-1">
@@ -162,52 +162,27 @@
                                 <span id="settings-menu-chevron" class="material-symbols-rounded text-[18px] text-gray-500 transition-transform duration-200">expand_less</span>
                             </button>
                             
-                            <!-- 下拉面板 (向上展開) -->
+                            <!-- 下拉面板 -->
                             <div id="settings-dropdown" class="hidden absolute bottom-full right-0 sm:left-0 mb-3 w-40 bg-[#2a2b2f] border border-[#444] rounded-xl shadow-[0_-10px_40px_rgba(0,0,0,0.5)] p-3 flex flex-col gap-4 z-50">
-                                
-                                <!-- 單純繪圖開關 -->
                                 <label class="relative flex items-center justify-between cursor-pointer group">
                                     <span class="text-xs font-medium text-gray-300 group-hover:text-purple-400 transition-colors flex items-center gap-1.5"><span class="material-symbols-rounded text-[16px]">palette</span> 單純繪圖</span>
-                                    <div class="relative">
-                                        <input type="checkbox" id="draw-mode-toggle" class="sr-only peer">
-                                        <div class="w-7 h-4 bg-gray-600 rounded-full peer peer-checked:bg-purple-600 after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:after:translate-x-full"></div>
-                                    </div>
+                                    <div class="relative"><input type="checkbox" id="draw-mode-toggle" class="sr-only peer"><div class="w-7 h-4 bg-gray-600 rounded-full peer peer-checked:bg-purple-600 after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:after:translate-x-full"></div></div>
                                 </label>
-
-                                <!-- 連網搜尋開關 -->
                                 <label class="relative flex items-center justify-between cursor-pointer group">
                                     <span class="text-xs font-medium text-gray-300 group-hover:text-blue-400 transition-colors flex items-center gap-1.5"><span class="material-symbols-rounded text-[16px]">language</span> 搜尋</span>
-                                    <div class="relative">
-                                        <input type="checkbox" id="web-search-toggle" class="sr-only peer">
-                                        <div class="w-7 h-4 bg-gray-600 rounded-full peer peer-checked:bg-blue-600 after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:after:translate-x-full"></div>
-                                    </div>
+                                    <div class="relative"><input type="checkbox" id="web-search-toggle" class="sr-only peer"><div class="w-7 h-4 bg-gray-600 rounded-full peer peer-checked:bg-blue-600 after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:after:translate-x-full"></div></div>
                                 </label>
-
-                                <!-- 自動配圖開關 (簡報用) -->
                                 <label class="relative flex items-center justify-between cursor-pointer group">
                                     <span class="text-xs font-medium text-gray-300 group-hover:text-pink-400 transition-colors flex items-center gap-1.5"><span class="material-symbols-rounded text-[16px]">imagesmode</span> 簡報配圖</span>
-                                    <div class="relative">
-                                        <input type="checkbox" id="auto-image-toggle" class="sr-only peer">
-                                        <div class="w-7 h-4 bg-gray-600 rounded-full peer peer-checked:bg-pink-600 after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:after:translate-x-full"></div>
-                                    </div>
+                                    <div class="relative"><input type="checkbox" id="auto-image-toggle" class="sr-only peer"><div class="w-7 h-4 bg-gray-600 rounded-full peer peer-checked:bg-pink-600 after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:after:translate-x-full"></div></div>
                                 </label>
-
-                                <!-- 語音播報開關 -->
                                 <label class="relative flex items-center justify-between cursor-pointer group">
                                     <span class="text-xs font-medium text-gray-300 group-hover:text-green-400 transition-colors flex items-center gap-1.5"><span class="material-symbols-rounded text-[16px]">volume_up</span> 播報</span>
-                                    <div class="relative">
-                                        <input type="checkbox" id="voice-output-toggle" class="sr-only peer">
-                                        <div class="w-7 h-4 bg-gray-600 rounded-full peer peer-checked:bg-green-600 after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:after:translate-x-full"></div>
-                                    </div>
+                                    <div class="relative"><input type="checkbox" id="voice-output-toggle" class="sr-only peer"><div class="w-7 h-4 bg-gray-600 rounded-full peer peer-checked:bg-green-600 after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:after:translate-x-full"></div></div>
                                 </label>
-
-                                <!-- 連續對話開關 -->
                                 <label class="relative flex items-center justify-between cursor-pointer group">
                                     <span class="text-xs font-medium text-gray-300 group-hover:text-yellow-400 transition-colors flex items-center gap-1.5"><span class="material-symbols-rounded text-[16px]">all_inclusive</span> 連續</span>
-                                    <div class="relative">
-                                        <input type="checkbox" id="continuous-mode-toggle" class="sr-only peer">
-                                        <div class="w-7 h-4 bg-gray-600 rounded-full peer peer-checked:bg-yellow-500 after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:after:translate-x-full"></div>
-                                    </div>
+                                    <div class="relative"><input type="checkbox" id="continuous-mode-toggle" class="sr-only peer"><div class="w-7 h-4 bg-gray-600 rounded-full peer peer-checked:bg-yellow-500 after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:after:translate-x-full"></div></div>
                                 </label>
                             </div>
                         </div>
@@ -237,7 +212,7 @@
 
     <script>
         // ⚠️ 請確認此處替換為您最新部署的 Apps Script Web App URL
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbwsng4RBCTX67my46U4fv7BhDYT0CIZt95dL7DNCFJTGUJLZFd_854vRGeUsQ1_BjG9/exec";
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbxdaE6GhEzJ8CMr-n5hyvHB0UamZllt-fFcul-blcbEdnPpm4hRxp3idYQrx-H0q_1K/exec";
 
         marked.use({
             renderer: {
@@ -254,32 +229,20 @@
 
         const chatContainer = document.getElementById('chat-container'), userInput = document.getElementById('user-input'), sendBtn = document.getElementById('send-btn'), sendBtnIcon = sendBtn.querySelector('.material-symbols-rounded');
 
-        // 原生高度自適應
         userInput.addEventListener('input', function() { this.style.height = 'auto'; this.style.height = (this.scrollHeight > 240 ? 240 : this.scrollHeight) + 'px'; });
 
-        // 控制下拉選單的邏輯
         function toggleSettingsMenu() {
             const dropdown = document.getElementById('settings-dropdown');
             const chevron = document.getElementById('settings-menu-chevron');
             dropdown.classList.toggle('hidden');
-            if (dropdown.classList.contains('hidden')) {
-                chevron.style.transform = 'rotate(0deg)';
-            } else {
-                chevron.style.transform = 'rotate(180deg)';
-            }
+            chevron.style.transform = dropdown.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(180deg)';
         }
 
-        // 點擊畫面其他地方自動關閉選單
         document.addEventListener('click', (e) => {
-            const btn = document.getElementById('settings-menu-btn');
-            const dropdown = document.getElementById('settings-dropdown');
-            if (btn && dropdown && !btn.contains(e.target) && !dropdown.contains(e.target)) {
-                dropdown.classList.add('hidden');
-                document.getElementById('settings-menu-chevron').style.transform = 'rotate(0deg)';
-            }
+            const btn = document.getElementById('settings-menu-btn'), dropdown = document.getElementById('settings-dropdown');
+            if (btn && dropdown && !btn.contains(e.target) && !dropdown.contains(e.target)) { dropdown.classList.add('hidden'); document.getElementById('settings-menu-chevron').style.transform = 'rotate(0deg)'; }
         });
 
-        // 語音輸入
         let recognition = null, isRecording = false, finalTranscript = '';
         if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
             recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
@@ -297,7 +260,6 @@
         function toggleRecording() { if (!recognition) { alert('瀏覽器不支援語音輸入。'); return; } isRecording ? stopRecording() : startRecording(); }
         function stopRecording() { isRecording = false; clearTimeout(silenceTimer); document.getElementById('mic-btn').classList.remove('recording-pulse', 'text-white'); document.getElementById('mic-btn').classList.add('text-gray-400'); if (recognition) try { recognition.stop(); } catch(e) {} }
 
-        // TTS 語音朗讀
         function speakText(text, isAutoPlay = false) {
             if (isAutoPlay && !document.getElementById('voice-output-toggle').checked) return false;
             if (!window.speechSynthesis) return false; window.speechSynthesis.cancel(); 
@@ -314,42 +276,18 @@
         }
         if (speechSynthesis.onvoiceschanged !== undefined) speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
 
-        // 懶加載解析引擎
         let pdfjsLibLoaded = false, mammothLoaded = false, xlsxLoaded = false, jszipLoaded = false;
         async function loadPdfJs() { if(pdfjsLibLoaded) return; return new Promise((r, j) => { let s = document.createElement('script'); s.src = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"; s.onload = () => { pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'; pdfjsLibLoaded = true; r(); }; s.onerror = j; document.head.appendChild(s); }); }
         async function loadMammoth() { if(mammothLoaded) return; return new Promise((r, j) => { let s = document.createElement('script'); s.src = "https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"; s.onload = () => { mammothLoaded = true; r(); }; s.onerror = j; document.head.appendChild(s); }); }
         async function loadXlsx() { if(xlsxLoaded) return; return new Promise((r, j) => { let s = document.createElement('script'); s.src = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"; s.onload = () => { xlsxLoaded = true; r(); }; s.onerror = j; document.head.appendChild(s); }); }
         async function loadJszip() { if(jszipLoaded) return; return new Promise((r, j) => { let s = document.createElement('script'); s.src = "https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"; s.onload = () => { jszipLoaded = true; r(); }; s.onerror = j; document.head.appendChild(s); }); }
 
-        // UI 互動修復：將 isResizing 綁定到 window 以確保全域有效
-        const sidebarDom = document.getElementById('sidebar');
-        const resizerDom = document.getElementById('sidebar-resizer');
+        const sidebarDom = document.getElementById('sidebar'), resizerDom = document.getElementById('sidebar-resizer');
         window.isResizing = false;
-        
-        if (resizerDom) {
-            resizerDom.addEventListener('mousedown', () => { 
-                window.isResizing = true; 
-                document.body.style.cursor = 'col-resize'; 
-                document.body.style.userSelect = 'none'; 
-            });
-        }
-        
-        document.addEventListener('mousemove', (e) => { 
-            if (!window.isResizing || window.innerWidth < 768) return; 
-            let nw = Math.max(200, Math.min(e.clientX, window.innerWidth * 0.5)); 
-            if (sidebarDom) sidebarDom.style.width = nw + 'px'; 
-        });
-        
-        document.addEventListener('mouseup', () => { 
-            if(window.isResizing){ 
-                window.isResizing = false; 
-                document.body.style.cursor = ''; 
-                document.body.style.userSelect = ''; 
-            } 
-        });
-
+        if (resizerDom) resizerDom.addEventListener('mousedown', () => { window.isResizing = true; document.body.style.cursor = 'col-resize'; document.body.style.userSelect = 'none'; });
+        document.addEventListener('mousemove', (e) => { if (!window.isResizing || window.innerWidth < 768) return; let nw = Math.max(200, Math.min(e.clientX, window.innerWidth * 0.5)); if (sidebarDom) sidebarDom.style.width = nw + 'px'; });
+        document.addEventListener('mouseup', () => { if(window.isResizing){ window.isResizing = false; document.body.style.cursor = ''; document.body.style.userSelect = ''; } });
         window.addEventListener('resize', () => { if (window.innerWidth < 768) { if (sidebarDom) sidebarDom.style.width = ''; } });
-        
         function toggleBookmarks() { const l = document.getElementById('bookmark-list'), c = document.getElementById('bookmark-chevron'); l.classList.toggle('hidden'); c.style.transform = l.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(180deg)'; }
         function toggleSendButton(w) { isWaiting = w; sendBtnIcon.innerText = w ? 'stop' : 'send'; sendBtn.className = w ? "p-2.5 sm:p-3 shrink-0 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-all shadow-md flex items-center justify-center" : "p-2.5 sm:p-3 shrink-0 bg-white text-black rounded-xl hover:bg-gray-200 transition-all shadow-md flex items-center justify-center"; sendBtn.onclick = w ? stopGeneration : sendMessage; }
         sendBtn.onclick = sendMessage; function stopGeneration() { if (abortController) { abortController.abort(); abortController = null; } }
@@ -364,7 +302,43 @@
         });
         userInput.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { if (window.innerWidth < 768) return; e.preventDefault(); isWaiting ? stopGeneration() : sendMessage(); } });
 
-        // ✨ 發送一般對話邏輯
+        // ✨ 修改歷史並重新生成 (時光機功能)
+        async function sendEditAndRegenerate(oldText, newText) {
+            if (isWaiting) return;
+            if (window.speechSynthesis) window.speechSynthesis.cancel(); 
+            
+            let agp = null, agm = null, gs = document.getElementById('gem-selector');
+            if (gs.value !== "") { agp = currentGemsList[parseInt(gs.value)].prompt; agm = currentGemsList[parseInt(gs.value)].model; }
+
+            let dMsg = newText;
+            if (agp) dMsg = `【使用角色：${currentGemsList[parseInt(gs.value)].name}${agm ? ` (${agm})` : ''}】\n${newText}`;
+
+            appendMessage('user', dMsg, null);
+            
+            const payload = { 
+                mode: 'edit_and_regenerate',
+                old_text: oldText,
+                message: newText,
+                session_id: currentSessionId, 
+                file_data: null, mime_type: null, 
+                web_search: document.getElementById('web-search-toggle').checked, 
+                auto_image: document.getElementById('auto-image-toggle').checked, 
+                draw_mode: document.getElementById('draw-mode-toggle').checked, 
+                youtube_id: null, gem_prompt: agp, gem_model: agm 
+            };
+            
+            toggleSendButton(true); const lid = appendLoading(); abortController = new AbortController(); 
+
+            try {
+                const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(payload), signal: abortController.signal });
+                const data = await res.json(); removeLoading(lid);
+                if (data.status === "error") throw new Error(data.error || "伺服器錯誤");
+                if (data.reply) { appendMessage('ai', data.reply, data.image ? `data:${data.mime};base64,${data.image}` : null, data.model); if (!speakText(data.reply, true) && document.getElementById('continuous-mode-toggle').checked) setTimeout(startRecording, 500); }
+                loadSessions(); 
+            } catch (err) { removeLoading(lid); appendMessage('ai', err.name === 'AbortError' ? `🛑 **生成已中止。**` : `❌ 執行失敗：\n\`\`\`text\n${err.message}\n\`\`\``); } 
+            finally { toggleSendButton(false); abortController = null; }
+        }
+
         async function sendMessage() {
             clearTimeout(silenceTimer); stopRecording(); 
             const text = userInput.value.trim();
@@ -413,43 +387,6 @@
             finally { toggleSendButton(false); abortController = null; }
         }
 
-        // ✨ 傳送修改與重新生成請求 (時光機模式)
-        async function sendEditAndRegenerate(oldText, newText) {
-            if (isWaiting) return;
-            if (window.speechSynthesis) window.speechSynthesis.cancel(); 
-            
-            let agp = null, agm = null, gs = document.getElementById('gem-selector');
-            if (gs.value !== "") { agp = currentGemsList[parseInt(gs.value)].prompt; agm = currentGemsList[parseInt(gs.value)].model; }
-
-            let dMsg = newText;
-            if (agp) dMsg = `【使用角色：${currentGemsList[parseInt(gs.value)].name}${agm ? ` (${agm})` : ''}】\n${newText}`;
-
-            appendMessage('user', dMsg, null);
-            
-            const payload = { 
-                mode: 'edit_and_regenerate',
-                old_text: oldText,      // 給後端用來精準截斷歷史
-                message: newText,       // 新的提問指令
-                session_id: currentSessionId, 
-                file_data: null, mime_type: null, 
-                web_search: document.getElementById('web-search-toggle').checked, 
-                auto_image: document.getElementById('auto-image-toggle').checked, 
-                draw_mode: document.getElementById('draw-mode-toggle').checked, 
-                youtube_id: null, gem_prompt: agp, gem_model: agm 
-            };
-            
-            toggleSendButton(true); const lid = appendLoading(); abortController = new AbortController(); 
-
-            try {
-                const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(payload), signal: abortController.signal });
-                const data = await res.json(); removeLoading(lid);
-                if (data.status === "error") throw new Error(data.error || "伺服器錯誤");
-                if (data.reply) { appendMessage('ai', data.reply, data.image ? `data:${data.mime};base64,${data.image}` : null, data.model); if (!speakText(data.reply, true) && document.getElementById('continuous-mode-toggle').checked) setTimeout(startRecording, 500); }
-                loadSessions(); 
-            } catch (err) { removeLoading(lid); appendMessage('ai', err.name === 'AbortError' ? `🛑 **生成已中止。**` : `❌ 執行失敗：\n\`\`\`text\n${err.message}\n\`\`\``); } 
-            finally { toggleSendButton(false); abortController = null; }
-        }
-
         async function handleFileUpload(e) {
             const f = e.target.files[0]; if (!f) return; const r = new FileReader(), ext = f.name.split('.').pop().toLowerCase();
             if (f.type.startsWith('image/')) { r.onload = (ev) => { currentImageData = ev.target.result; currentMimeType = f.type; document.getElementById('image-preview').src = currentImageData; document.getElementById('image-preview').classList.remove('hidden'); document.getElementById('doc-preview').classList.add('hidden'); document.getElementById('youtube-preview').classList.add('hidden'); document.getElementById('upload-preview-container').classList.remove('hidden'); }; r.readAsDataURL(f); } 
@@ -462,7 +399,7 @@
         function setDocPayload(n, t) { currentDocumentName = n; currentDocumentText = t; document.getElementById('doc-filename').innerText = n; document.getElementById('doc-preview').classList.remove('hidden'); document.getElementById('image-preview').classList.add('hidden'); document.getElementById('youtube-preview').classList.add('hidden'); document.getElementById('upload-preview-container').classList.remove('hidden'); }
         function clearUpload() { currentImageData = currentDocumentText = currentDocumentName = currentYouTubeId = null; document.getElementById('upload-preview-container').classList.add('hidden'); document.getElementById('file-upload').value = ''; }
 
-        // ✨ 注入編輯 (Edit) 與回收刪除 (Soft-delete) 按鈕的 UI 邏輯
+        // ✨ UI：注入編輯 (Edit) 與回收刪除 (Soft-delete) 按鈕的邏輯
         function appendMessage(role, text, imageSrc = null, model = null) {
             const isAI = role === 'ai', w = document.createElement('div'); w.className = `flex gap-3 sm:gap-4 max-w-4xl mx-auto w-full group ${!isAI ? 'flex-row-reverse' : ''}`;
             let b = `<div class="flex-1 ${!isAI ? 'text-right' : ''} space-y-2 max-w-[90%] sm:max-w-[85%] relative min-w-0">`;
@@ -505,7 +442,6 @@
                     const editContainer = document.createElement('div');
                     editContainer.className = "w-full mt-2 flex flex-col gap-2 text-left";
                     
-                    // 去除系統添加的【使用角色...】綴詞，只留下純淨的提示詞讓使用者編輯
                     let cleanEditText = text.replace(new RegExp('^【使用角色：.*?】\\n'), '').replace(new RegExp('^📎 \\[(?:文件|檔案): .*?\\]\\n'), '').replace(new RegExp('^📺 \\[YouTube 影片\\]\\n'), '');
 
                     editContainer.innerHTML = `
@@ -527,14 +463,12 @@
                         const newText = editContainer.querySelector('textarea').value.trim();
                         if (!newText) return;
                         
-                        // 🌟 時光機截斷：消除該節點下方「所有未來」的氣泡
                         let curr = w;
                         while(curr) {
                             let next = curr.nextElementSibling;
                             curr.remove();
                             curr = next;
                         }
-                        // 將舊文字傳給後端去精準定位資料列
                         sendEditAndRegenerate(text, newText); 
                     };
                 };
@@ -578,7 +512,13 @@
             if ((code.includes('export default') || code.includes('import React') || code.includes('className=')) && !(code.trim().toLowerCase().startsWith('<!doctype html') || code.trim().toLowerCase().startsWith('<html'))) {
                 let cc = code.replace(new RegExp('import\\s+.*?from\\s+[\'"].*?[\'"];?', 'g'), '').replace(new RegExp('export\\s+default\\s+function', 'g'), 'function');
                 let cm = code.replace(new RegExp('import\\s+.*?from\\s+[\'"].*?[\'"];?', 'g'), '').match(new RegExp('export\\s+default\\s+function\\s+([A-Za-z0-9_]+)'));
-                rc = `<!DOCTYPE html><html lang="zh-TW"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><script src="https://unpkg.com/react@18/umd/react.production.min.js">\x3C/script><script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js">\x3C/script><script src="https://unpkg.com/@babel/standalone/babel.min.js">\x3C/script><script src="https://cdn.tailwindcss.com">\x3C/script><script src="https://unpkg.com/lucide@latest">\x3C/script></head><body class="bg-gray-50"><div id="root"></div><script type="text/babel">const { useState, useEffect, useRef, useMemo, useCallback } = React; try { ${cc} const root = ReactDOM.createRoot(document.getElementById('root')); root.render(<${cm ? cm[1] : 'App'} />); setTimeout(() => { if(window.lucide) window.lucide.createIcons(); }, 100); } catch(err) { document.getElementById('root').innerHTML = '<div class="p-4 text-red-700">渲染錯誤:<br>' + err.message + '</div>'; } \x3C/script></body></html>`;
+                rc = `<!DOCTYPE html><html lang="zh-TW"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">` + 
+                     `<script src="https://unpkg.com/react@18/umd/react.production.min.js">\x3C/script>` + 
+                     `<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js">\x3C/script>` + 
+                     `<script src="https://unpkg.com/@babel/standalone/babel.min.js">\x3C/script>` + 
+                     `<script src="https://cdn.tailwindcss.com">\x3C/script>` + 
+                     `<script src="https://unpkg.com/lucide@latest">\x3C/script>` + 
+                     `</head><body class="bg-gray-50"><div id="root"></div><script type="text/babel">const { useState, useEffect, useRef, useMemo, useCallback } = React; try { ${cc} const root = ReactDOM.createRoot(document.getElementById('root')); root.render(<${cm ? cm[1] : 'App'} />); setTimeout(() => { if(window.lucide) window.lucide.createIcons(); }, 100); } catch(err) { document.getElementById('root').innerHTML = '<div class="p-4 text-red-700">渲染錯誤:<br>' + err.message + '</div>'; } \x3C/script></body></html>`;
             }
             currentRenderCode = rc; document.getElementById('preview-modal').classList.remove('hidden'); document.getElementById('preview-modal').classList.add('flex'); document.getElementById('preview-iframe').srcdoc = rc;
         }
@@ -589,3 +529,6 @@
     </script>
 </body>
 </html>
+
+
+
