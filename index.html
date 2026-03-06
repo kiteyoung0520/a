@@ -98,7 +98,7 @@
                 </a>
             </div>
         </div>
-        <div class="p-4 border-t border-[#333] text-xs text-gray-500 text-center font-mono shrink-0">v86.11 UI Fixed Edition</div>
+        <div class="p-4 border-t border-[#333] text-xs text-gray-500 text-center font-mono shrink-0">v86.13 Time Machine Edition</div>
     </aside>
 
     <!-- Main Chat Area -->
@@ -237,7 +237,7 @@
 
     <script>
         // ⚠️ 請確認此處替換為您最新部署的 Apps Script Web App URL
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbwsng4RBCTX67my46U4fv7BhDYT0CIZt95dL7DNCFJTGUJLZFd_854vRGeUsQ1_BjG9/exec";
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbxdaE6GhEzJ8CMr-n5hyvHB0UamZllt-fFcul-blcbEdnPpm4hRxp3idYQrx-H0q_1K/exec";
 
         marked.use({
             renderer: {
@@ -321,7 +321,7 @@
         async function loadXlsx() { if(xlsxLoaded) return; return new Promise((r, j) => { let s = document.createElement('script'); s.src = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"; s.onload = () => { xlsxLoaded = true; r(); }; s.onerror = j; document.head.appendChild(s); }); }
         async function loadJszip() { if(jszipLoaded) return; return new Promise((r, j) => { let s = document.createElement('script'); s.src = "https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"; s.onload = () => { jszipLoaded = true; r(); }; s.onerror = j; document.head.appendChild(s); }); }
 
-        // ✨ UI 互動修復：將 isResizing 綁定到 window 以確保全域有效
+        // UI 互動修復：將 isResizing 綁定到 window 以確保全域有效
         const sidebarDom = document.getElementById('sidebar');
         const resizerDom = document.getElementById('sidebar-resizer');
         window.isResizing = false;
@@ -364,6 +364,7 @@
         });
         userInput.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { if (window.innerWidth < 768) return; e.preventDefault(); isWaiting ? stopGeneration() : sendMessage(); } });
 
+        // ✨ 發送一般對話邏輯
         async function sendMessage() {
             clearTimeout(silenceTimer); stopRecording(); 
             const text = userInput.value.trim();
@@ -412,6 +413,43 @@
             finally { toggleSendButton(false); abortController = null; }
         }
 
+        // ✨ 傳送修改與重新生成請求 (時光機模式)
+        async function sendEditAndRegenerate(oldText, newText) {
+            if (isWaiting) return;
+            if (window.speechSynthesis) window.speechSynthesis.cancel(); 
+            
+            let agp = null, agm = null, gs = document.getElementById('gem-selector');
+            if (gs.value !== "") { agp = currentGemsList[parseInt(gs.value)].prompt; agm = currentGemsList[parseInt(gs.value)].model; }
+
+            let dMsg = newText;
+            if (agp) dMsg = `【使用角色：${currentGemsList[parseInt(gs.value)].name}${agm ? ` (${agm})` : ''}】\n${newText}`;
+
+            appendMessage('user', dMsg, null);
+            
+            const payload = { 
+                mode: 'edit_and_regenerate',
+                old_text: oldText,      // 給後端用來精準截斷歷史
+                message: newText,       // 新的提問指令
+                session_id: currentSessionId, 
+                file_data: null, mime_type: null, 
+                web_search: document.getElementById('web-search-toggle').checked, 
+                auto_image: document.getElementById('auto-image-toggle').checked, 
+                draw_mode: document.getElementById('draw-mode-toggle').checked, 
+                youtube_id: null, gem_prompt: agp, gem_model: agm 
+            };
+            
+            toggleSendButton(true); const lid = appendLoading(); abortController = new AbortController(); 
+
+            try {
+                const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(payload), signal: abortController.signal });
+                const data = await res.json(); removeLoading(lid);
+                if (data.status === "error") throw new Error(data.error || "伺服器錯誤");
+                if (data.reply) { appendMessage('ai', data.reply, data.image ? `data:${data.mime};base64,${data.image}` : null, data.model); if (!speakText(data.reply, true) && document.getElementById('continuous-mode-toggle').checked) setTimeout(startRecording, 500); }
+                loadSessions(); 
+            } catch (err) { removeLoading(lid); appendMessage('ai', err.name === 'AbortError' ? `🛑 **生成已中止。**` : `❌ 執行失敗：\n\`\`\`text\n${err.message}\n\`\`\``); } 
+            finally { toggleSendButton(false); abortController = null; }
+        }
+
         async function handleFileUpload(e) {
             const f = e.target.files[0]; if (!f) return; const r = new FileReader(), ext = f.name.split('.').pop().toLowerCase();
             if (f.type.startsWith('image/')) { r.onload = (ev) => { currentImageData = ev.target.result; currentMimeType = f.type; document.getElementById('image-preview').src = currentImageData; document.getElementById('image-preview').classList.remove('hidden'); document.getElementById('doc-preview').classList.add('hidden'); document.getElementById('youtube-preview').classList.add('hidden'); document.getElementById('upload-preview-container').classList.remove('hidden'); }; r.readAsDataURL(f); } 
@@ -424,16 +462,103 @@
         function setDocPayload(n, t) { currentDocumentName = n; currentDocumentText = t; document.getElementById('doc-filename').innerText = n; document.getElementById('doc-preview').classList.remove('hidden'); document.getElementById('image-preview').classList.add('hidden'); document.getElementById('youtube-preview').classList.add('hidden'); document.getElementById('upload-preview-container').classList.remove('hidden'); }
         function clearUpload() { currentImageData = currentDocumentText = currentDocumentName = currentYouTubeId = null; document.getElementById('upload-preview-container').classList.add('hidden'); document.getElementById('file-upload').value = ''; }
 
+        // ✨ 注入編輯 (Edit) 與回收刪除 (Soft-delete) 按鈕的 UI 邏輯
         function appendMessage(role, text, imageSrc = null, model = null) {
             const isAI = role === 'ai', w = document.createElement('div'); w.className = `flex gap-3 sm:gap-4 max-w-4xl mx-auto w-full group ${!isAI ? 'flex-row-reverse' : ''}`;
             let b = `<div class="flex-1 ${!isAI ? 'text-right' : ''} space-y-2 max-w-[90%] sm:max-w-[85%] relative min-w-0">`;
+            
             if (imageSrc) b += `<img src="${imageSrc}" class="rounded-xl border border-[#333] mb-2 max-w-full">`;
-            if (text) b += `<div class="prose prose-invert text-gray-200 bg-[#1e1f22] p-4 sm:p-5 rounded-2xl rounded-tl-none shadow-sm text-base sm:text-lg leading-relaxed">${isAI ? marked.parse(text) : text.replace(new RegExp('\\n', 'g'), '<br>')}</div>`;
-            if (isAI && text) b += `<div class="flex items-center gap-2 mt-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"><button class="copy-btn p-1.5 text-gray-400 hover:text-white hover:bg-[#333] rounded-md"><span class="material-symbols-rounded text-[16px] sm:text-[18px]">content_copy</span></button><button class="speak-btn p-1.5 text-gray-400 hover:text-green-400 hover:bg-[#333] rounded-md"><span class="material-symbols-rounded text-[16px] sm:text-[18px]">volume_up</span></button></div>`;
-            b += `</div>`; w.innerHTML = `<div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center shrink-0 shadow-lg ${isAI ? 'bg-blue-600' : 'bg-gray-700'}"><span class="material-symbols-rounded text-white text-[18px] sm:text-xl">${isAI ? 'smart_toy' : 'person'}</span></div>` + b;
+            if (text) b += `<div class="prose prose-invert text-gray-200 bg-[#1e1f22] p-4 sm:p-5 rounded-2xl rounded-tl-none shadow-sm text-base sm:text-lg leading-relaxed text-left">${isAI ? marked.parse(text) : text.replace(new RegExp('\\n', 'g'), '<br>')}</div>`;
+            
+            // 動態功能按鈕區
+            b += `<div class="flex items-center gap-2 mt-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity ${!isAI ? 'justify-end' : ''}">`;
+            if (isAI && text) {
+                b += `<button class="copy-btn p-1.5 text-gray-400 hover:text-white hover:bg-[#333] rounded-md" title="複製"><span class="material-symbols-rounded text-[16px] sm:text-[18px]">content_copy</span></button>`;
+                b += `<button class="speak-btn p-1.5 text-gray-400 hover:text-green-400 hover:bg-[#333] rounded-md" title="朗讀此訊息"><span class="material-symbols-rounded text-[16px] sm:text-[18px]">volume_up</span></button>`;
+            } 
+            if (!isAI && text) {
+                b += `<button class="edit-btn p-1.5 text-gray-400 hover:text-blue-400 hover:bg-[#333] rounded-md transition-colors" title="編輯並重新生成"><span class="material-symbols-rounded text-[16px] sm:text-[18px]">edit</span></button>`;
+            }
+            if (text || imageSrc) {
+                b += `<button class="delete-btn p-1.5 text-gray-400 hover:text-red-400 hover:bg-[#333] rounded-md transition-colors" title="刪除此訊息"><span class="material-symbols-rounded text-[16px] sm:text-[18px]">delete</span></button>`;
+            }
+            b += `</div></div>`; 
+            
+            w.innerHTML = `<div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center shrink-0 shadow-lg ${isAI ? 'bg-blue-600' : 'bg-gray-700'}"><span class="material-symbols-rounded text-white text-[18px] sm:text-xl">${isAI ? 'smart_toy' : 'person'}</span></div>` + b;
             chatContainer.appendChild(w);
+
             if (isAI) { w.querySelectorAll('pre code').forEach(c => { if (c.className.includes('language-html') || c.className.includes('language-jsx') || c.className.includes('language-javascript')) { let btn = document.createElement('button'); btn.className = "absolute top-2 sm:top-3 right-2 sm:right-3 bg-blue-600 hover:bg-blue-500 text-white text-[10px] sm:text-xs px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg flex items-center gap-1 shadow-lg"; btn.innerHTML = '<span class="material-symbols-rounded text-[12px] sm:text-sm">play_circle</span> 預覽'; btn.onclick = () => openPreview(c.innerText); c.parentElement.appendChild(btn); } }); }
-            if (isAI && text) { w.querySelector('.copy-btn').onclick = () => navigator.clipboard.writeText(text).then(() => { let ic = w.querySelector('.copy-btn .material-symbols-rounded'); ic.innerText = 'check'; ic.classList.add('text-green-400'); setTimeout(() => { ic.innerText = 'content_copy'; ic.classList.remove('text-green-400'); }, 2000); }); w.querySelector('.speak-btn').onclick = () => speakText(text, false); }
+            
+            if (isAI && text) { 
+                w.querySelector('.copy-btn').onclick = () => navigator.clipboard.writeText(text).then(() => { let ic = w.querySelector('.copy-btn .material-symbols-rounded'); ic.innerText = 'check'; ic.classList.add('text-green-400'); setTimeout(() => { ic.innerText = 'content_copy'; ic.classList.remove('text-green-400'); }, 2000); }); 
+                w.querySelector('.speak-btn').onclick = () => speakText(text, false); 
+            } 
+            
+            // 綁定「編輯/時光機」事件
+            if (!isAI && text) {
+                w.querySelector('.edit-btn').onclick = () => {
+                    const contentDiv = w.querySelector('.prose');
+                    const actionsDiv = w.querySelector('.flex.items-center.gap-2.mt-2');
+                    contentDiv.classList.add('hidden');
+                    actionsDiv.classList.add('hidden');
+                    
+                    const editContainer = document.createElement('div');
+                    editContainer.className = "w-full mt-2 flex flex-col gap-2 text-left";
+                    
+                    // 去除系統添加的【使用角色...】綴詞，只留下純淨的提示詞讓使用者編輯
+                    let cleanEditText = text.replace(new RegExp('^【使用角色：.*?】\\n'), '').replace(new RegExp('^📎 \\[(?:文件|檔案): .*?\\]\\n'), '').replace(new RegExp('^📺 \\[YouTube 影片\\]\\n'), '');
+
+                    editContainer.innerHTML = `
+                        <textarea class="w-full bg-[#2a2b2f] text-white p-3 rounded-xl border border-blue-500 outline-none resize-y min-h-[100px] text-base leading-relaxed">${cleanEditText}</textarea>
+                        <div class="flex justify-end gap-2">
+                            <button class="cancel-edit-btn px-3 py-1.5 rounded-lg text-sm font-medium text-gray-400 hover:bg-[#333] transition-colors">取消</button>
+                            <button class="save-edit-btn px-3 py-1.5 rounded-lg text-sm font-medium bg-blue-600 hover:bg-blue-500 text-white flex items-center gap-1 transition-colors shadow-md"><span class="material-symbols-rounded text-[16px]">send</span> 重新發送</button>
+                        </div>
+                    `;
+                    w.querySelector('.flex-1').appendChild(editContainer);
+                    
+                    editContainer.querySelector('.cancel-edit-btn').onclick = () => {
+                        editContainer.remove();
+                        contentDiv.classList.remove('hidden');
+                        actionsDiv.classList.remove('hidden');
+                    };
+                    
+                    editContainer.querySelector('.save-edit-btn').onclick = () => {
+                        const newText = editContainer.querySelector('textarea').value.trim();
+                        if (!newText) return;
+                        
+                        // 🌟 時光機截斷：消除該節點下方「所有未來」的氣泡
+                        let curr = w;
+                        while(curr) {
+                            let next = curr.nextElementSibling;
+                            curr.remove();
+                            curr = next;
+                        }
+                        // 將舊文字傳給後端去精準定位資料列
+                        sendEditAndRegenerate(text, newText); 
+                    };
+                };
+            }
+
+            // 綁定「刪除/回收」事件
+            if (w.querySelector('.delete-btn')) {
+                w.querySelector('.delete-btn').onclick = () => {
+                    if (confirm("確定要刪除這則訊息嗎？\n(刪除後系統將徹底忘記這段對話)")) {
+                        w.remove();
+                        fetch(GAS_URL, {
+                            method: 'POST',
+                            body: JSON.stringify({
+                                mode: 'system',
+                                action: 'delete_message',
+                                session_id: currentSessionId,
+                                target_text: text,
+                                target_role: role
+                            })
+                        });
+                    }
+                };
+            }
+
             scrollToBottom();
         }
 
@@ -448,19 +573,12 @@
         async function loadGems() { try { const d = await (await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ mode: 'system', action: 'get_gems' }) })).json(); if (d && d.gems) { currentGemsList = d.gems; const s = document.getElementById('gem-selector'); s.innerHTML = '<option value="">🤖 預設全能助理</option>'; currentGemsList.forEach((g, i) => s.innerHTML += `<option value="${i}">💎 ${g.name}</option>`); } } catch (e) {} }
         async function loadSessions() { try { const d = await (await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ mode: 'system', action: 'get_session_list' }) })).json(); const l = document.getElementById('session-list'); l.innerHTML = ''; if (Array.isArray(d.sessions)) d.sessions.forEach(s => { const act = s.id === currentSessionId, pin = s.pinned, i = document.createElement('div'); i.className = `group flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all ${act ? 'active-session' : 'text-gray-400 hover:bg-[#2a2b2f] hover:text-white'}`; i.innerHTML = `<div class="flex items-center gap-3 truncate flex-1 min-w-0"><span class="material-symbols-rounded text-lg shrink-0 ${pin ? 'pinned-icon' : ''}">${pin ? 'push_pin' : (act ? 'chat_bubble' : 'chat')}</span><span class="truncate text-sm font-medium tracking-wide">${s.title}</span></div><div class="flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 shrink-0 ml-2 transition-opacity"><button class="p-1 pin-btn ${pin ? 'text-blue-500' : ''} hover:bg-[#333] rounded-md transition-colors"><span class="material-symbols-rounded text-[16px]">push_pin</span></button><button class="p-1 edit-btn hover:text-blue-400 hover:bg-[#333] rounded-md transition-colors"><span class="material-symbols-rounded text-[16px]">edit</span></button><button class="p-1 del-btn hover:text-red-400 hover:bg-[#333] rounded-md transition-colors"><span class="material-symbols-rounded text-[16px]">delete</span></button></div>`; i.onclick = () => switchSession(s.id, s.title); i.querySelector('.pin-btn').onclick = (e) => { e.stopPropagation(); fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ mode: 'system', action: 'pin_session', session_id: s.id, is_pinned: !pin }) }).then(loadSessions); }; i.querySelector('.edit-btn').onclick = (e) => { e.stopPropagation(); const n = prompt("重命名：", s.title); if (n && n.trim()) fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ mode: 'system', action: 'rename_session', session_id: s.id, new_title: n }) }).then(loadSessions); }; i.querySelector('.del-btn').onclick = (e) => { e.stopPropagation(); if (confirm("確定要刪除嗎？")) fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ mode: 'system', action: 'delete_session', session_id: s.id }) }).then(() => s.id === currentSessionId ? startNewSession() : loadSessions()); }; l.appendChild(i); }); } catch (e) {} }
 
-        // ✨ UI 破版修復：使用安全的字串拼接與十六進位跳脫字元，保護 HTML 解析器
         function openPreview(code) {
             let rc = code;
             if ((code.includes('export default') || code.includes('import React') || code.includes('className=')) && !(code.trim().toLowerCase().startsWith('<!doctype html') || code.trim().toLowerCase().startsWith('<html'))) {
                 let cc = code.replace(new RegExp('import\\s+.*?from\\s+[\'"].*?[\'"];?', 'g'), '').replace(new RegExp('export\\s+default\\s+function', 'g'), 'function');
                 let cm = code.replace(new RegExp('import\\s+.*?from\\s+[\'"].*?[\'"];?', 'g'), '').match(new RegExp('export\\s+default\\s+function\\s+([A-Za-z0-9_]+)'));
-                rc = `<!DOCTYPE html><html lang="zh-TW"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">` + 
-                     `<script src="https://unpkg.com/react@18/umd/react.production.min.js">\x3C/script>` + 
-                     `<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js">\x3C/script>` + 
-                     `<script src="https://unpkg.com/@babel/standalone/babel.min.js">\x3C/script>` + 
-                     `<script src="https://cdn.tailwindcss.com">\x3C/script>` + 
-                     `<script src="https://unpkg.com/lucide@latest">\x3C/script>` + 
-                     `</head><body class="bg-gray-50"><div id="root"></div><script type="text/babel">const { useState, useEffect, useRef, useMemo, useCallback } = React; try { ${cc} const root = ReactDOM.createRoot(document.getElementById('root')); root.render(<${cm ? cm[1] : 'App'} />); setTimeout(() => { if(window.lucide) window.lucide.createIcons(); }, 100); } catch(err) { document.getElementById('root').innerHTML = '<div class="p-4 text-red-700">渲染錯誤:<br>' + err.message + '</div>'; } \x3C/script></body></html>`;
+                rc = `<!DOCTYPE html><html lang="zh-TW"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><script src="https://unpkg.com/react@18/umd/react.production.min.js">\x3C/script><script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js">\x3C/script><script src="https://unpkg.com/@babel/standalone/babel.min.js">\x3C/script><script src="https://cdn.tailwindcss.com">\x3C/script><script src="https://unpkg.com/lucide@latest">\x3C/script></head><body class="bg-gray-50"><div id="root"></div><script type="text/babel">const { useState, useEffect, useRef, useMemo, useCallback } = React; try { ${cc} const root = ReactDOM.createRoot(document.getElementById('root')); root.render(<${cm ? cm[1] : 'App'} />); setTimeout(() => { if(window.lucide) window.lucide.createIcons(); }, 100); } catch(err) { document.getElementById('root').innerHTML = '<div class="p-4 text-red-700">渲染錯誤:<br>' + err.message + '</div>'; } \x3C/script></body></html>`;
             }
             currentRenderCode = rc; document.getElementById('preview-modal').classList.remove('hidden'); document.getElementById('preview-modal').classList.add('flex'); document.getElementById('preview-iframe').srcdoc = rc;
         }
