@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>anyGem - Super Agent (Global Model Selector)</title>
+    <title>anyGem - Super Agent (Ultimate Edition)</title>
     
     <link rel="preconnect" href="https://cdn.tailwindcss.com">
     <link rel="preconnect" href="https://cdn.jsdelivr.net">
@@ -98,7 +98,7 @@
                 </a>
             </div>
         </div>
-        <div class="p-4 border-t border-[#333] text-xs text-gray-500 text-center font-mono shrink-0">v86.26 Global Override</div>
+        <div class="p-4 border-t border-[#333] text-xs text-gray-500 text-center font-mono shrink-0">v86.27 Ultimate Edition</div>
     </aside>
 
     <!-- Main Chat Area -->
@@ -223,26 +223,44 @@
         // ⚠️ 請確認此處替換為您最新部署的 Apps Script Web App URL
         const GAS_URL = "https://script.google.com/macros/s/AKfycbxdaE6GhEzJ8CMr-n5hyvHB0UamZllt-fFcul-blcbEdnPpm4hRxp3idYQrx-H0q_1K/exec";
 
-        marked.use({ renderer: { link(h, t, txt) { return `<a href="${h.href || h}" ${t ? `title="${t}"` : ''} target="_blank" rel="noopener noreferrer">${h.text || txt}</a>`; } } });
+        marked.use({
+            renderer: {
+                link(hrefOrToken, title, text) {
+                    let h = hrefOrToken.href || hrefOrToken, t = hrefOrToken.title || title, txt = hrefOrToken.text || text;
+                    return `<a href="${h}" ${t ? `title="${t}"` : ''} target="_blank" rel="noopener noreferrer">${txt}</a>`;
+                }
+            }
+        });
 
-        let currentSessionId = generateUUID(), currentImageData = null, currentMimeType = null, currentDocumentText = null, currentDocumentName = null, currentYouTubeId = null;
+        let currentSessionId = generateUUID();
+        let currentImageData = null, currentMimeType = null, currentDocumentText = null, currentDocumentName = null, currentYouTubeId = null;
         let isWaiting = false, currentRenderCode = "", abortController = null, silenceTimer = null, currentGemsList = []; 
 
         const chatContainer = document.getElementById('chat-container'), userInput = document.getElementById('user-input'), sendBtn = document.getElementById('send-btn'), sendBtnIcon = sendBtn.querySelector('.material-symbols-rounded');
+
         userInput.addEventListener('input', function() { this.style.height = 'auto'; this.style.height = (this.scrollHeight > 240 ? 240 : this.scrollHeight) + 'px'; });
 
-        function toggleSettingsMenu() { const d = document.getElementById('settings-dropdown'), c = document.getElementById('settings-menu-chevron'); d.classList.toggle('hidden'); c.style.transform = d.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(180deg)'; }
-        document.addEventListener('click', (e) => { const b = document.getElementById('settings-menu-btn'), d = document.getElementById('settings-dropdown'); if (b && d && !b.contains(e.target) && !d.contains(e.target)) { d.classList.add('hidden'); document.getElementById('settings-menu-chevron').style.transform = 'rotate(0deg)'; } });
+        function toggleSettingsMenu() {
+            const dropdown = document.getElementById('settings-dropdown');
+            const chevron = document.getElementById('settings-menu-chevron');
+            dropdown.classList.toggle('hidden');
+            chevron.style.transform = dropdown.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(180deg)';
+        }
+
+        document.addEventListener('click', (e) => {
+            const btn = document.getElementById('settings-menu-btn'), dropdown = document.getElementById('settings-dropdown');
+            if (btn && dropdown && !btn.contains(e.target) && !dropdown.contains(e.target)) { dropdown.classList.add('hidden'); document.getElementById('settings-menu-chevron').style.transform = 'rotate(0deg)'; }
+        });
 
         let recognition = null, isRecording = false, finalTranscript = '';
         if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
             recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
             recognition.continuous = true; recognition.interimResults = true; recognition.lang = 'cmn-Hant-TW'; 
             recognition.onstart = function() { isRecording = true; document.getElementById('mic-btn').classList.add('recording-pulse', 'text-white'); document.getElementById('mic-btn').classList.remove('text-gray-400'); finalTranscript = userInput.value; if (window.speechSynthesis) window.speechSynthesis.cancel(); };
-            recognition.onresult = function(e) {
-                if (!isRecording) return; let i = '';
-                for (let j = e.resultIndex; j < e.results.length; ++j) e.results[j].isFinal ? finalTranscript += e.results[j][0].transcript : i += e.results[j][0].transcript;
-                userInput.value = finalTranscript + i; userInput.style.height = 'auto'; userInput.style.height = (userInput.scrollHeight > 240 ? 240 : userInput.scrollHeight) + 'px';
+            recognition.onresult = function(event) {
+                if (!isRecording) return; let interim = '';
+                for (let i = event.resultIndex; i < event.results.length; ++i) event.results[i].isFinal ? finalTranscript += event.results[i][0].transcript : interim += event.results[i][0].transcript;
+                userInput.value = finalTranscript + interim; userInput.style.height = 'auto'; userInput.style.height = (userInput.scrollHeight > 240 ? 240 : userInput.scrollHeight) + 'px';
                 if (document.getElementById('continuous-mode-toggle').checked) { clearTimeout(silenceTimer); silenceTimer = setTimeout(() => { if (isRecording && userInput.value.trim() !== '') { stopRecording(); sendMessage(); } }, 1500); }
             };
             recognition.onerror = () => stopRecording(); recognition.onend = () => stopRecording();
@@ -251,14 +269,19 @@
         function toggleRecording() { if (!recognition) { alert('瀏覽器不支援語音輸入。'); return; } isRecording ? stopRecording() : startRecording(); }
         function stopRecording() { isRecording = false; clearTimeout(silenceTimer); document.getElementById('mic-btn').classList.remove('recording-pulse', 'text-white'); document.getElementById('mic-btn').classList.add('text-gray-400'); if (recognition) try { recognition.stop(); } catch(e) {} }
 
-        function speakText(t, a = false) {
-            if (a && !document.getElementById('voice-output-toggle').checked) return false;
+        function speakText(text, isAutoPlay = false) {
+            if (isAutoPlay && !document.getElementById('voice-output-toggle').checked) return false;
             if (!window.speechSynthesis) return false; window.speechSynthesis.cancel(); 
-            const bt = String.fromCharCode(96, 96, 96); let c = t.replace(new RegExp(bt + '[\\s\\S]*?' + bt, 'g'), '').replace(/https?:\/\/[^\s]+/g, '網址').replace(/[*_#~|]/g, '').trim();
-            if (!c) return false; let u = new SpeechSynthesisUtterance(c), v = window.speechSynthesis.getVoices(), s = null;
-            if (/[\u4e00-\u9fa5]/.test(c)) { u.lang = 'zh-TW'; u.rate = 0.95; s = v.find(x => x.name.includes('Xiaoxiao') || x.name.includes('Yating') || (x.lang === 'zh-TW' && x.name.includes('Google'))) || v.find(x => x.lang === 'zh-TW'); } 
-            else { u.lang = 'en-US'; u.rate = 0.9; s = v.find(x => x.name.includes('Samantha') || (x.lang === 'en-US' && x.name.includes('Google'))) || v.find(x => x.lang === 'en-US'); }
-            if (s) u.voice = s; if (a) u.onend = () => { if (document.getElementById('continuous-mode-toggle').checked && !isWaiting) startRecording(); }; window.speechSynthesis.speak(u); return true;
+            const bt = String.fromCharCode(96, 96, 96);
+            let cleanText = text.replace(new RegExp(bt + '[\\s\\S]*?' + bt, 'g'), '').replace(new RegExp('https?:\\/\\/[^\\s]+', 'g'), '網址').replace(new RegExp('[*_#~|]', 'g'), '').trim();
+            if (!cleanText) return false;
+            let utterance = new SpeechSynthesisUtterance(cleanText);
+            let v = window.speechSynthesis.getVoices(), sv = null;
+            if (new RegExp('[\\u4e00-\\u9fa5]').test(cleanText)) { utterance.lang = 'zh-TW'; utterance.rate = 0.95; utterance.pitch = 0.95; sv = v.find(x => x.name.includes('Xiaoxiao') || x.name.includes('Yating') || (x.lang === 'zh-TW' && x.name.includes('Google'))) || v.find(x => x.lang === 'zh-TW'); } 
+            else { utterance.lang = 'en-US'; utterance.rate = 0.9; utterance.pitch = 0.95; sv = v.find(x => x.name.includes('Samantha') || (x.lang === 'en-US' && x.name.includes('Google'))) || v.find(x => x.lang === 'en-US'); }
+            if (sv) utterance.voice = sv;
+            if (isAutoPlay) utterance.onend = () => { if (document.getElementById('continuous-mode-toggle').checked && !isWaiting) startRecording(); };
+            window.speechSynthesis.speak(utterance); return true;
         }
         if (speechSynthesis.onvoiceschanged !== undefined) speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
 
@@ -268,7 +291,8 @@
         async function loadXlsx() { if(xlsxLoaded) return; return new Promise((r, j) => { let s = document.createElement('script'); s.src = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"; s.onload = () => { xlsxLoaded = true; r(); }; s.onerror = j; document.head.appendChild(s); }); }
         async function loadJszip() { if(jszipLoaded) return; return new Promise((r, j) => { let s = document.createElement('script'); s.src = "https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"; s.onload = () => { jszipLoaded = true; r(); }; s.onerror = j; document.head.appendChild(s); }); }
 
-        const sidebarDom = document.getElementById('sidebar'), resizerDom = document.getElementById('sidebar-resizer'); window.isResizing = false;
+        const sidebarDom = document.getElementById('sidebar'), resizerDom = document.getElementById('sidebar-resizer');
+        window.isResizing = false;
         if (resizerDom) resizerDom.addEventListener('mousedown', () => { window.isResizing = true; document.body.style.cursor = 'col-resize'; document.body.style.userSelect = 'none'; });
         document.addEventListener('mousemove', (e) => { if (!window.isResizing || window.innerWidth < 768) return; let nw = Math.max(200, Math.min(e.clientX, window.innerWidth * 0.5)); if (sidebarDom) sidebarDom.style.width = nw + 'px'; });
         document.addEventListener('mouseup', () => { if(window.isResizing){ window.isResizing = false; document.body.style.cursor = ''; document.body.style.userSelect = ''; } });
@@ -278,120 +302,231 @@
         sendBtn.onclick = sendMessage; function stopGeneration() { if (abortController) { abortController.abort(); abortController = null; } }
 
         userInput.addEventListener('paste', function(e) {
-            const pt = (e.clipboardData || window.clipboardData).getData('text'), ytMatch = pt.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i);
+            const pt = (e.clipboardData || window.clipboardData).getData('text');
+            const ytMatch = pt.match(new RegExp('(?:youtube\\.com/(?:[^/]+/.+/|(?:v|e(?:mbed)?)/|.*[?&]v=)|youtu\\.be/)([^"&?/\\s]{11})', 'i'));
             if (ytMatch && ytMatch[1]) { e.preventDefault(); currentYouTubeId = ytMatch[1]; document.getElementById('yt-thumbnail').src = `https://img.youtube.com/vi/${currentYouTubeId}/mqdefault.jpg`; document.getElementById('youtube-preview').classList.remove('hidden'); document.getElementById('image-preview').classList.add('hidden'); document.getElementById('doc-preview').classList.add('hidden'); document.getElementById('upload-preview-container').classList.remove('hidden'); document.getElementById('web-search-toggle').checked = true; return; }
             if (e.clipboardData && e.clipboardData.items) { for (let i = 0; i < e.clipboardData.items.length; i++) { if (e.clipboardData.items[i].type.indexOf('image') !== -1) { e.preventDefault(); const file = e.clipboardData.items[i].getAsFile(), reader = new FileReader(); reader.onload = (ev) => { currentImageData = ev.target.result; currentMimeType = file.type; document.getElementById('image-preview').src = currentImageData; document.getElementById('image-preview').classList.remove('hidden'); document.getElementById('doc-preview').classList.add('hidden'); document.getElementById('youtube-preview').classList.add('hidden'); document.getElementById('upload-preview-container').classList.remove('hidden'); }; reader.readAsDataURL(file); return; } } }
-            if (pt && pt.startsWith('data:image/')) { e.preventDefault(); currentImageData = pt; const m = pt.match(/data:(.*?);/); currentMimeType = m ? m[1] : 'image/png'; document.getElementById('image-preview').src = currentImageData; document.getElementById('image-preview').classList.remove('hidden'); document.getElementById('doc-preview').classList.add('hidden'); document.getElementById('youtube-preview').classList.add('hidden'); document.getElementById('upload-preview-container').classList.remove('hidden'); }
+            if (pt && pt.startsWith('data:image/')) { e.preventDefault(); currentImageData = pt; const m = pt.match(new RegExp('data:(.*?);')); currentMimeType = m ? m[1] : 'image/png'; document.getElementById('image-preview').src = currentImageData; document.getElementById('image-preview').classList.remove('hidden'); document.getElementById('doc-preview').classList.add('hidden'); document.getElementById('youtube-preview').classList.add('hidden'); document.getElementById('upload-preview-container').classList.remove('hidden'); }
             setTimeout(() => { userInput.style.height = 'auto'; userInput.style.height = (userInput.scrollHeight > 240 ? 240 : userInput.scrollHeight) + 'px'; }, 0);
         });
         userInput.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { if (window.innerWidth < 768) return; e.preventDefault(); isWaiting ? stopGeneration() : sendMessage(); } });
 
+        // ✨ 修改歷史並重新生成 (時光機功能)
         async function sendEditAndRegenerate(oldText, newText) {
-            if (isWaiting) return; if (window.speechSynthesis) window.speechSynthesis.cancel(); 
-            let agp = null, agm = null, gs = document.getElementById('gem-selector'), ms = document.getElementById('model-selector');
-            if (gs.value !== "") { agp = currentGemsList[parseInt(gs.value)].prompt; agm = currentGemsList[parseInt(gs.value)].model; }
+            if (isWaiting) return;
+            if (window.speechSynthesis) window.speechSynthesis.cancel(); 
             
+            let agp = null, agm = null;
+            const gs = document.getElementById('gem-selector');
+            const ms = document.getElementById('model-selector');
+            
+            if (gs.value !== "") { agp = currentGemsList[parseInt(gs.value)].prompt; agm = currentGemsList[parseInt(gs.value)].model; }
+
             let dMsg = newText;
             if (agp) dMsg = `【使用角色：${currentGemsList[parseInt(gs.value)].name}${agm ? ` (${agm})` : ''}】\n${newText}`;
+
             appendMessage('user', dMsg, null);
             
             const payload = { 
-                mode: 'edit_and_regenerate', old_text: oldText, message: newText, session_id: currentSessionId, 
-                file_data: null, mime_type: null, web_search: document.getElementById('web-search-toggle').checked, 
-                auto_image: document.getElementById('auto-image-toggle').checked, draw_mode: document.getElementById('draw-mode-toggle').checked, 
-                youtube_id: null, gem_prompt: agp, gem_model: agm,
-                selected_model: ms.value // ✨ 將手動選擇的模型傳給後端
+                mode: 'edit_and_regenerate',
+                old_text: oldText,
+                message: newText,
+                session_id: currentSessionId, 
+                file_data: null, mime_type: null, 
+                web_search: document.getElementById('web-search-toggle').checked, 
+                auto_image: document.getElementById('auto-image-toggle').checked, 
+                draw_mode: document.getElementById('draw-mode-toggle').checked, 
+                youtube_id: null, 
+                gem_prompt: agp, 
+                gem_model: agm,
+                selected_model: ms.value // ✨ 傳送全域模型參數
             };
             
             toggleSendButton(true); const lid = appendLoading(); abortController = new AbortController(); 
-            try { const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(payload), signal: abortController.signal }); const data = await res.json(); removeLoading(lid); if (data.status === "error") throw new Error(data.error || "伺服器錯誤"); if (data.reply) { appendMessage('ai', data.reply, data.image ? `data:${data.mime};base64,${data.image}` : null, data.model); if (!speakText(data.reply, true) && document.getElementById('continuous-mode-toggle').checked) setTimeout(startRecording, 500); } loadSessions(); } 
-            catch (err) { removeLoading(lid); appendMessage('ai', err.name === 'AbortError' ? `🛑 **生成已中止。**` : `❌ 執行失敗：\n\`\`\`text\n${err.message}\n\`\`\``); } finally { toggleSendButton(false); abortController = null; }
+
+            try {
+                const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(payload), signal: abortController.signal });
+                const data = await res.json(); removeLoading(lid);
+                if (data.status === "error") throw new Error(data.error || "伺服器錯誤");
+                if (data.reply) { appendMessage('ai', data.reply, data.image ? `data:${data.mime};base64,${data.image}` : null, data.model); if (!speakText(data.reply, true) && document.getElementById('continuous-mode-toggle').checked) setTimeout(startRecording, 500); }
+                loadSessions(); 
+            } catch (err) { removeLoading(lid); appendMessage('ai', err.name === 'AbortError' ? `🛑 **生成已中止。**` : `❌ 執行失敗：\n\`\`\`text\n${err.message}\n\`\`\``); } 
+            finally { toggleSendButton(false); abortController = null; }
         }
 
         async function sendMessage() {
-            clearTimeout(silenceTimer); stopRecording(); const text = userInput.value.trim();
+            clearTimeout(silenceTimer); stopRecording(); 
+            const text = userInput.value.trim();
             if (!text && !currentImageData && !currentDocumentText && !currentYouTubeId) return;
-            if (isWaiting) return; if (window.speechSynthesis) window.speechSynthesis.cancel(); 
+            if (isWaiting) return;
+            if (window.speechSynthesis) window.speechSynthesis.cancel(); 
 
-            let agp = null, agm = null, gs = document.getElementById('gem-selector'), ms = document.getElementById('model-selector');
+            let agp = null, agm = null;
+            const gs = document.getElementById('gem-selector');
+            const ms = document.getElementById('model-selector');
+            
             if (gs.value !== "") { agp = currentGemsList[parseInt(gs.value)].prompt; agm = currentGemsList[parseInt(gs.value)].model; }
 
             let dMsg = text;
             if (currentDocumentName) dMsg = `📎 [文件: ${currentDocumentName}]\n${text}`;
             if (currentYouTubeId) dMsg = `📺 [YouTube 影片]\n${text}`;
             if (agp && !currentDocumentName && !currentYouTubeId) dMsg = `【使用角色：${currentGemsList[parseInt(gs.value)].name}${agm ? ` (${agm})` : ''}】\n${text}`;
+
             appendMessage('user', dMsg, currentImageData);
             
             let pText = text || "請分析此內容";
             if (currentDocumentText) pText = `【檔案：${currentDocumentName}】\n${currentDocumentText}\n\n指令：${pText}`;
             else if (currentYouTubeId) pText = `【影片】：https://www.youtube.com/watch?v=${currentYouTubeId}\n\n指令：${pText}`;
+
             userInput.value = ''; userInput.style.height = 'auto'; finalTranscript = ''; 
             
             const payload = { 
-                message: pText, session_id: currentSessionId, file_data: currentImageData ? currentImageData.split(',')[1] : null, mime_type: currentMimeType, 
-                web_search: document.getElementById('web-search-toggle').checked, auto_image: document.getElementById('auto-image-toggle').checked, 
-                draw_mode: document.getElementById('draw-mode-toggle').checked, youtube_id: currentYouTubeId, gem_prompt: agp, gem_model: agm,
-                selected_model: ms.value // ✨ 將手動選擇的模型傳給後端
+                message: pText, 
+                session_id: currentSessionId, 
+                file_data: currentImageData ? currentImageData.split(',')[1] : null, 
+                mime_type: currentMimeType, 
+                web_search: document.getElementById('web-search-toggle').checked, 
+                auto_image: document.getElementById('auto-image-toggle').checked, 
+                draw_mode: document.getElementById('draw-mode-toggle').checked, 
+                youtube_id: currentYouTubeId, 
+                gem_prompt: agp, 
+                gem_model: agm,
+                selected_model: ms.value // ✨ 傳送全域模型參數
             };
             
             clearUpload(); toggleSendButton(true); const lid = appendLoading(); abortController = new AbortController(); 
-            try { const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(payload), signal: abortController.signal }); const data = await res.json(); removeLoading(lid); if (data.status === "error") throw new Error(data.error || "伺服器錯誤"); if (data.reply) { appendMessage('ai', data.reply, data.image ? `data:${data.mime};base64,${data.image}` : null, data.model); if (!speakText(data.reply, true) && document.getElementById('continuous-mode-toggle').checked) setTimeout(startRecording, 500); } loadSessions(); } 
-            catch (err) { removeLoading(lid); appendMessage('ai', err.name === 'AbortError' ? `🛑 **生成已中止。**` : `❌ 執行失敗：\n\`\`\`text\n${err.message}\n\`\`\``); } finally { toggleSendButton(false); abortController = null; }
+
+            try {
+                const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(payload), signal: abortController.signal });
+                const data = await res.json(); removeLoading(lid);
+                if (data.status === "error") throw new Error(data.error || "伺服器錯誤");
+                if (data.reply) { appendMessage('ai', data.reply, data.image ? `data:${data.mime};base64,${data.image}` : null, data.model); if (!speakText(data.reply, true) && document.getElementById('continuous-mode-toggle').checked) setTimeout(startRecording, 500); }
+                loadSessions(); 
+            } catch (err) { removeLoading(lid); appendMessage('ai', err.name === 'AbortError' ? `🛑 **生成已中止。**` : `❌ 執行失敗：\n\`\`\`text\n${err.message}\n\`\`\``); } 
+            finally { toggleSendButton(false); abortController = null; }
         }
 
         async function handleFileUpload(e) {
             const f = e.target.files[0]; if (!f) return; const r = new FileReader(), ext = f.name.split('.').pop().toLowerCase();
             if (f.type.startsWith('image/')) { r.onload = (ev) => { currentImageData = ev.target.result; currentMimeType = f.type; document.getElementById('image-preview').src = currentImageData; document.getElementById('image-preview').classList.remove('hidden'); document.getElementById('doc-preview').classList.add('hidden'); document.getElementById('youtube-preview').classList.add('hidden'); document.getElementById('upload-preview-container').classList.remove('hidden'); }; r.readAsDataURL(f); } 
-            else if (f.type === 'application/pdf' || ext === 'pdf') { const lid = appendLoading(); try { await loadPdfJs(); r.onload = async (ev) => { try { const pdf = await pdfjsLib.getDocument(new Uint8Array(ev.target.result)).promise; let t = ""; for (let i=1; i<=pdf.numPages; i++) t += (await (await pdf.getPage(i)).getTextContent()).items.map(s => s.str).join(' ') + "\n"; setDocPayload(f.name, t); } catch (err) { alert("PDF 失敗"); } finally { removeLoading(lid); } }; r.readAsArrayBuffer(f); } catch (err) { removeLoading(lid); alert("載入 PDF 引擎失敗"); } } 
-            else if (ext === 'docx') { const lid = appendLoading(); try { await loadMammoth(); r.onload = async (ev) => { try { setDocPayload(f.name, (await mammoth.extractRawText({ arrayBuffer: ev.target.result })).value); } catch(err) { alert("Word 失敗"); } finally { removeLoading(lid); } }; r.readAsArrayBuffer(f); } catch (err) { removeLoading(lid); alert("載入 Word 引擎失敗"); } } 
-            else if (ext === 'xlsx' || ext === 'csv') { const lid = appendLoading(); try { await loadXlsx(); r.onload = (ev) => { try { const wb = XLSX.read(ev.target.result, { type: 'array' }); let t = ""; wb.SheetNames.forEach(n => { t += `\n--- 表單: ${n} ---\n`; let c = XLSX.utils.sheet_to_csv(wb.Sheets[n]); t += c.length > 500000 ? c.substring(0, 500000) + "\n...[截斷]..." : c; }); setDocPayload(f.name, t); } catch(err) { alert("Excel 失敗"); } finally { removeLoading(lid); } }; r.readAsArrayBuffer(f); } catch (err) { removeLoading(lid); alert("載入 Excel 引擎失敗"); } } 
-            else if (ext === 'pptx') { const lid = appendLoading(); try { await loadJszip(); r.onload = async (ev) => { try { const zip = await (new JSZip()).loadAsync(ev.target.result); let t = `【簡報檔名 ${f.name}】\n\n`; const sFiles = Object.keys(zip.files).filter(n => n.match(/^ppt\/slides\/slide\d+\.xml$/)).sort((a, b) => parseInt(a.match(/(\d+)\.xml$/)[1]) - parseInt(b.match(/(\d+)\.xml$/)[1])), nFiles = Object.keys(zip.files).filter(n => n.match(/^ppt\/notesSlides\/notesSlide\d+\.xml$/)), parser = new DOMParser(); for (const p of sFiles) { const sn = p.match(/(\d+)\.xml$/)[1]; t += `--- 第 ${sn} 頁 ---\n`; const sx = await zip.file(p).async("string"); if (sx) t += `[內容]:\n${Array.from(parser.parseFromString(sx, "text/xml").getElementsByTagName("a:t")).map(n=>n.textContent).join(" ").trim()}\n`; const np = `ppt/notesSlides/notesSlide${sn}.xml`; if (nFiles.includes(np)) { const nx = await zip.file(np).async("string"); if (nx) t += `[備忘錄]:\n${Array.from(parser.parseFromString(nx, "text/xml").getElementsByTagName("a:t")).map(n=>n.textContent).join(" ").trim()}\n`; } t += `\n`; } setDocPayload(f.name, t); } catch (err) { alert("PPTX 失敗"); } finally { removeLoading(lid); } }; r.readAsArrayBuffer(f); } catch (err) { removeLoading(lid); alert("載入 ZIP 引擎失敗"); } } 
+            else if (f.type === 'application/pdf' || ext === 'pdf') { const lid = appendLoading(); try { await loadPdfJs(); r.onload = async (ev) => { try { const pdf = await pdfjsLib.getDocument(new Uint8Array(ev.target.result)).promise; let t = ""; for (let i=1; i<=pdf.numPages; i++) t += (await (await pdf.getPage(i)).getTextContent()).items.map(s => s.str).join(' ') + "\n"; setDocPayload(f.name, t); } catch (err) { alert("PDF 解析失敗"); } finally { removeLoading(lid); } }; r.readAsArrayBuffer(f); } catch (err) { removeLoading(lid); alert("載入 PDF 引擎失敗"); } } 
+            else if (ext === 'docx') { const lid = appendLoading(); try { await loadMammoth(); r.onload = async (ev) => { try { setDocPayload(f.name, (await mammoth.extractRawText({ arrayBuffer: ev.target.result })).value); } catch(err) { alert("Word 解析失敗"); } finally { removeLoading(lid); } }; r.readAsArrayBuffer(f); } catch (err) { removeLoading(lid); alert("載入 Word 引擎失敗"); } } 
+            else if (ext === 'xlsx' || ext === 'csv') { const lid = appendLoading(); try { await loadXlsx(); r.onload = (ev) => { try { const wb = XLSX.read(ev.target.result, { type: 'array' }); let t = ""; wb.SheetNames.forEach(n => { t += `\n--- 表單: ${n} ---\n`; let c = XLSX.utils.sheet_to_csv(wb.Sheets[n]); t += c.length > 500000 ? c.substring(0, 500000) + "\n...[截斷]..." : c; }); setDocPayload(f.name, t); } catch(err) { alert("Excel 解析失敗"); } finally { removeLoading(lid); } }; r.readAsArrayBuffer(f); } catch (err) { removeLoading(lid); alert("載入 Excel 引擎失敗"); } } 
+            else if (ext === 'pptx') { const lid = appendLoading(); try { await loadJszip(); r.onload = async (ev) => { try { const zip = await (new JSZip()).loadAsync(ev.target.result); let t = `【系統解析：簡報檔名 ${f.name}】\n\n`; const sFiles = Object.keys(zip.files).filter(n => n.match(new RegExp('^ppt/slides/slide\\\\d+\\\\.xml$'))).sort((a, b) => parseInt(a.match(new RegExp('(\\\\d+)\\\\.xml$'))[1]) - parseInt(b.match(new RegExp('(\\\\d+)\\\\.xml$'))[1])), nFiles = Object.keys(zip.files).filter(n => n.match(new RegExp('^ppt/notesSlides/notesSlide\\\\d+\\\\.xml$'))), parser = new DOMParser(); for (const p of sFiles) { const sn = p.match(new RegExp('(\\\\d+)\\\\.xml$'))[1]; t += `--- 第 ${sn} 頁 ---\n`; const sx = await zip.file(p).async("string"); if (sx) { const xmlDoc = parser.parseFromString(sx, "text/xml"); const textNodes = xmlDoc.getElementsByTagName("a:t"); let extText = ""; for (let i = 0; i < textNodes.length; i++) extText += textNodes[i].textContent + " "; t += `[投影片內容]:\n${extText.trim()}\n`; } const np = `ppt/notesSlides/notesSlide${sn}.xml`; if (nFiles.includes(np)) { const nx = await zip.file(np).async("string"); if (nx) { const xmlDoc = parser.parseFromString(nx, "text/xml"); const textNodes = xmlDoc.getElementsByTagName("a:t"); let extText = ""; for (let i = 0; i < textNodes.length; i++) extText += textNodes[i].textContent + " "; if (extText.trim()) t += `[講者備忘錄]:\n${extText.trim()}\n`; } } t += `\n`; } setDocPayload(f.name, t); } catch (err) { alert("PPTX 解析失敗"); } finally { removeLoading(lid); } }; r.readAsArrayBuffer(f); } catch (err) { removeLoading(lid); alert("載入 ZIP 引擎失敗"); } } 
             else { r.onload = (ev) => setDocPayload(f.name, ev.target.result); r.readAsText(f); }
         }
         function setDocPayload(n, t) { currentDocumentName = n; currentDocumentText = t; document.getElementById('doc-filename').innerText = n; document.getElementById('doc-preview').classList.remove('hidden'); document.getElementById('image-preview').classList.add('hidden'); document.getElementById('youtube-preview').classList.add('hidden'); document.getElementById('upload-preview-container').classList.remove('hidden'); }
         function clearUpload() { currentImageData = currentDocumentText = currentDocumentName = currentYouTubeId = null; document.getElementById('upload-preview-container').classList.add('hidden'); document.getElementById('file-upload').value = ''; }
 
+        // ✨ UI：注入編輯 (Edit) 與回收刪除 (Soft-delete) 按鈕的邏輯
         function appendMessage(role, text, imageSrc = null, model = null) {
             const isAI = role === 'ai', w = document.createElement('div'); w.className = `flex gap-3 sm:gap-4 max-w-4xl mx-auto w-full group ${!isAI ? 'flex-row-reverse' : ''}`;
             let b = `<div class="flex-1 ${!isAI ? 'text-right' : ''} space-y-2 max-w-[90%] sm:max-w-[85%] relative min-w-0">`;
+            
             if (model && isAI) b += `<div class="text-[10px] text-gray-500 mb-1 ml-1 select-none font-mono">Powered by ${model}</div>`;
             if (imageSrc) b += `<img src="${imageSrc}" class="rounded-xl border border-[#333] mb-2 max-w-full">`;
-            if (text) b += `<div class="prose prose-invert text-gray-200 bg-[#1e1f22] p-4 sm:p-5 rounded-2xl rounded-tl-none shadow-sm text-base sm:text-lg leading-relaxed text-left">${isAI ? marked.parse(text) : text.replace(/\n/g, '<br>')}</div>`;
+            if (text) b += `<div class="prose prose-invert text-gray-200 bg-[#1e1f22] p-4 sm:p-5 rounded-2xl rounded-tl-none shadow-sm text-base sm:text-lg leading-relaxed text-left">${isAI ? marked.parse(text) : text.replace(new RegExp('\\n', 'g'), '<br>')}</div>`;
             
+            // 動態功能按鈕區
             b += `<div class="flex items-center gap-2 mt-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity ${!isAI ? 'justify-end' : ''}">`;
-            if (isAI && text) { b += `<button class="copy-btn p-1.5 text-gray-400 hover:text-white hover:bg-[#333] rounded-md" title="複製"><span class="material-symbols-rounded text-[16px] sm:text-[18px]">content_copy</span></button><button class="speak-btn p-1.5 text-gray-400 hover:text-green-400 hover:bg-[#333] rounded-md" title="朗讀此訊息"><span class="material-symbols-rounded text-[16px] sm:text-[18px]">volume_up</span></button>`; } 
-            if (!isAI && text) { b += `<button class="edit-btn p-1.5 text-gray-400 hover:text-blue-400 hover:bg-[#333] rounded-md transition-colors" title="編輯並重新生成"><span class="material-symbols-rounded text-[16px] sm:text-[18px]">edit</span></button>`; }
-            if (text || imageSrc) { b += `<button class="delete-btn p-1.5 text-gray-400 hover:text-red-400 hover:bg-[#333] rounded-md transition-colors" title="刪除此訊息"><span class="material-symbols-rounded text-[16px] sm:text-[18px]">delete</span></button>`; }
+            if (isAI && text) {
+                b += `<button class="copy-btn p-1.5 text-gray-400 hover:text-white hover:bg-[#333] rounded-md" title="複製"><span class="material-symbols-rounded text-[16px] sm:text-[18px]">content_copy</span></button>`;
+                b += `<button class="speak-btn p-1.5 text-gray-400 hover:text-green-400 hover:bg-[#333] rounded-md" title="朗讀此訊息"><span class="material-symbols-rounded text-[16px] sm:text-[18px]">volume_up</span></button>`;
+            } 
+            if (!isAI && text) {
+                b += `<button class="edit-btn p-1.5 text-gray-400 hover:text-blue-400 hover:bg-[#333] rounded-md transition-colors" title="編輯並重新生成"><span class="material-symbols-rounded text-[16px] sm:text-[18px]">edit</span></button>`;
+            }
+            if (text || imageSrc) {
+                b += `<button class="delete-btn p-1.5 text-gray-400 hover:text-red-400 hover:bg-[#333] rounded-md transition-colors" title="刪除此訊息"><span class="material-symbols-rounded text-[16px] sm:text-[18px]">delete</span></button>`;
+            }
             b += `</div></div>`; 
             
             w.innerHTML = `<div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center shrink-0 shadow-lg ${isAI ? 'bg-blue-600' : 'bg-gray-700'}"><span class="material-symbols-rounded text-white text-[18px] sm:text-xl">${isAI ? 'smart_toy' : 'person'}</span></div>` + b;
             chatContainer.appendChild(w);
 
+            // Artifacts 渲染按鈕
             if (isAI) { w.querySelectorAll('pre code').forEach(c => { if (c.className.includes('language-html') || c.className.includes('language-jsx') || c.className.includes('language-javascript')) { let btn = document.createElement('button'); btn.className = "absolute top-2 sm:top-3 right-2 sm:right-3 bg-blue-600 hover:bg-blue-500 text-white text-[10px] sm:text-xs px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg flex items-center gap-1 shadow-lg"; btn.innerHTML = '<span class="material-symbols-rounded text-[12px] sm:text-sm">play_circle</span> 預覽'; btn.onclick = () => openPreview(c.innerText); c.parentElement.appendChild(btn); } }); }
-            if (isAI && text) { w.querySelector('.copy-btn').onclick = () => navigator.clipboard.writeText(text).then(() => { let ic = w.querySelector('.copy-btn .material-symbols-rounded'); ic.innerText = 'check'; ic.classList.add('text-green-400'); setTimeout(() => { ic.innerText = 'content_copy'; ic.classList.remove('text-green-400'); }, 2000); }); w.querySelector('.speak-btn').onclick = () => speakText(text, false); } 
+            
+            if (isAI && text) { 
+                w.querySelector('.copy-btn').onclick = () => navigator.clipboard.writeText(text).then(() => { let ic = w.querySelector('.copy-btn .material-symbols-rounded'); ic.innerText = 'check'; ic.classList.add('text-green-400'); setTimeout(() => { ic.innerText = 'content_copy'; ic.classList.remove('text-green-400'); }, 2000); }); 
+                w.querySelector('.speak-btn').onclick = () => speakText(text, false); 
+            } 
+            
+            // 綁定「編輯/時光機」事件
             if (!isAI && text) {
                 w.querySelector('.edit-btn').onclick = () => {
-                    const cDiv = w.querySelector('.prose'), aDiv = w.querySelector('.flex.items-center.gap-2.mt-2'); cDiv.classList.add('hidden'); aDiv.classList.add('hidden');
-                    const eCon = document.createElement('div'); eCon.className = "w-full mt-2 flex flex-col gap-2 text-left";
-                    let cTxt = text.replace(/^【使用角色：.*?】\n/, '').replace(/^📎 \[(?:文件|檔案): .*?\]\n/, '').replace(/^📺 \[YouTube 影片\]\n/, '');
-                    eCon.innerHTML = `<textarea class="w-full bg-[#2a2b2f] text-white p-3 rounded-xl border border-blue-500 outline-none resize-y min-h-[100px] text-base leading-relaxed">${cTxt}</textarea><div class="flex justify-end gap-2"><button class="cancel-edit-btn px-3 py-1.5 rounded-lg text-sm font-medium text-gray-400 hover:bg-[#333] transition-colors">取消</button><button class="save-edit-btn px-3 py-1.5 rounded-lg text-sm font-medium bg-blue-600 hover:bg-blue-500 text-white flex items-center gap-1 transition-colors shadow-md"><span class="material-symbols-rounded text-[16px]">send</span> 重新發送</button></div>`;
-                    w.querySelector('.flex-1').appendChild(eCon);
-                    eCon.querySelector('.cancel-edit-btn').onclick = () => { eCon.remove(); cDiv.classList.remove('hidden'); aDiv.classList.remove('hidden'); };
-                    eCon.querySelector('.save-edit-btn').onclick = () => { const nTxt = eCon.querySelector('textarea').value.trim(); if (!nTxt) return; let curr = w; while(curr) { let next = curr.nextElementSibling; curr.remove(); curr = next; } sendEditAndRegenerate(text, nTxt); };
+                    const contentDiv = w.querySelector('.prose');
+                    const actionsDiv = w.querySelector('.flex.items-center.gap-2.mt-2');
+                    contentDiv.classList.add('hidden');
+                    actionsDiv.classList.add('hidden');
+                    
+                    const editContainer = document.createElement('div');
+                    editContainer.className = "w-full mt-2 flex flex-col gap-2 text-left";
+                    
+                    let cleanEditText = text.replace(new RegExp('^【使用角色：.*?】\\n'), '').replace(new RegExp('^📎 \\[(?:文件|檔案): .*?\\]\\n'), '').replace(new RegExp('^📺 \\[YouTube 影片\\]\\n'), '');
+
+                    editContainer.innerHTML = `
+                        <textarea class="w-full bg-[#2a2b2f] text-white p-3 rounded-xl border border-blue-500 outline-none resize-y min-h-[100px] text-base leading-relaxed">${cleanEditText}</textarea>
+                        <div class="flex justify-end gap-2">
+                            <button class="cancel-edit-btn px-3 py-1.5 rounded-lg text-sm font-medium text-gray-400 hover:bg-[#333] transition-colors">取消</button>
+                            <button class="save-edit-btn px-3 py-1.5 rounded-lg text-sm font-medium bg-blue-600 hover:bg-blue-500 text-white flex items-center gap-1 transition-colors shadow-md"><span class="material-symbols-rounded text-[16px]">send</span> 重新發送</button>
+                        </div>
+                    `;
+                    w.querySelector('.flex-1').appendChild(editContainer);
+                    
+                    editContainer.querySelector('.cancel-edit-btn').onclick = () => {
+                        editContainer.remove();
+                        contentDiv.classList.remove('hidden');
+                        actionsDiv.classList.remove('hidden');
+                    };
+                    
+                    editContainer.querySelector('.save-edit-btn').onclick = () => {
+                        const newText = editContainer.querySelector('textarea').value.trim();
+                        if (!newText) return;
+                        
+                        let curr = w;
+                        while(curr) {
+                            let next = curr.nextElementSibling;
+                            curr.remove();
+                            curr = next;
+                        }
+                        sendEditAndRegenerate(text, newText); 
+                    };
                 };
             }
-            if (w.querySelector('.delete-btn')) { w.querySelector('.delete-btn').onclick = () => { if (confirm("確定要刪除這則訊息嗎？\n(刪除後系統將徹底忘記這段對話)")) { w.remove(); fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ mode: 'system', action: 'delete_message', session_id: currentSessionId, target_text: text, target_role: role }) }); } }; }
+
+            // 綁定「刪除/回收」事件
+            if (w.querySelector('.delete-btn')) {
+                w.querySelector('.delete-btn').onclick = () => {
+                    if (confirm("確定要刪除這則訊息嗎？\n(刪除後系統將徹底忘記這段對話)")) {
+                        w.remove();
+                        fetch(GAS_URL, {
+                            method: 'POST',
+                            body: JSON.stringify({
+                                mode: 'system',
+                                action: 'delete_message',
+                                session_id: currentSessionId,
+                                target_text: text,
+                                target_role: role
+                            })
+                        });
+                    }
+                };
+            }
+
             scrollToBottom();
         }
 
         function appendLoading() { const id = 'loader-' + Date.now(), d = document.createElement('div'); d.id = id; d.className = "flex gap-3 sm:gap-4 max-w-4xl mx-auto w-full"; d.innerHTML = `<div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-blue-600 flex items-center justify-center shrink-0 animate-pulse"><span class="material-symbols-rounded text-white text-[18px] sm:text-xl">hourglass_empty</span></div><div class="pt-1.5 sm:pt-3 flex gap-2 items-center text-gray-500 text-sm sm:text-base italic typing-indicator">代理人正忙碌中<span></span><span></span><span></span></div>`; chatContainer.appendChild(d); scrollToBottom(); return id; }
         function removeLoading(id) { const el = document.getElementById(id); if (el) el.remove(); }
         function scrollToBottom() { chatContainer.scrollTop = chatContainer.scrollHeight; }
-        function generateUUID() { return 'xxxx-4xxx-yxxx'.replace(/[xy]/g, c => (c === 'x' ? (Math.random() * 16 | 0) : (Math.random() * 16 | 0 & 0x3 | 0x8)).toString(16)); }
+        function generateUUID() { return 'xxxx-4xxx-yxxx'.replace(new RegExp('[xy]', 'g'), c => (c === 'x' ? (Math.random() * 16 | 0) : (Math.random() * 16 | 0 & 0x3 | 0x8)).toString(16)); }
         function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); document.getElementById('sidebar-overlay').classList.toggle('hidden'); }
-        function startNewSession() { currentSessionId = generateUUID(); chatContainer.innerHTML = ''; appendMessage('ai', "您好！已為您開啟新的對話。\n您可以透過下方的「💎 角色選單」切換我的人格設定，或是用「🧠 模型選單」指定我要使用的腦袋！"); if (window.innerWidth < 768) toggleSidebar(); loadSessions(); }
+        function startNewSession() { currentSessionId = generateUUID(); chatContainer.innerHTML = ''; appendMessage('ai', "您好！已為您開啟新的對話。\n您可以透過下方的「💎 角色選單」切換專長，或使用「🧠 模型選單」自由升降級我的智商大腦！"); if (window.innerWidth < 768) toggleSidebar(); loadSessions(); }
+        
         async function switchSession(id, title) { if (id === currentSessionId && chatContainer.children.length > 1) return; currentSessionId = id; document.getElementById('mobile-title').innerText = title; chatContainer.innerHTML = ''; const lid = appendLoading(); if (window.innerWidth < 768) toggleSidebar(); try { const d = await (await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ mode: 'system', action: 'load_session', session_id: id }) })).json(); removeLoading(lid); if (Array.isArray(d.logs)) d.logs.forEach(l => appendMessage(l.role === 'ai' ? 'ai' : 'user', l.text)); loadSessions(); } catch (e) {} }
         
+        // 載入 Gems 列表
         async function loadGems() { try { const d = await (await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ mode: 'system', action: 'get_gems' }) })).json(); if (d && d.gems) { currentGemsList = d.gems; const s = document.getElementById('gem-selector'); s.innerHTML = '<option value="">🤖 全能助理</option>'; currentGemsList.forEach((g, i) => s.innerHTML += `<option value="${i}">💎 ${g.name}</option>`); } } catch (e) {} }
         
         // ✨ 新增：拉取全域模型清單
@@ -414,9 +549,9 @@
 
         function openPreview(code) {
             let rc = code;
-            if ((code.includes('export default') || code.includes('import React') || code.includes('className=')) && !(/<!doctype html/i.test(code.trim()) || /<html/i.test(code.trim()))) {
-                let cc = code.replace(/import\s+.*?from\s+['"].*?['"];?/g, '').replace(/export\s+default\s+function/g, 'function');
-                let cm = code.replace(/import\s+.*?from\s+['"].*?['"];?/g, '').match(/export\s+default\s+function\s+([A-Za-z0-9_]+)/);
+            if ((code.includes('export default') || code.includes('import React') || code.includes('className=')) && !(code.trim().toLowerCase().startsWith('<!doctype html') || code.trim().toLowerCase().startsWith('<html'))) {
+                let cc = code.replace(new RegExp('import\\s+.*?from\\s+[\'"].*?[\'"];?', 'g'), '').replace(new RegExp('export\\s+default\\s+function', 'g'), 'function');
+                let cm = code.replace(new RegExp('import\\s+.*?from\\s+[\'"].*?[\'"];?', 'g'), '').match(new RegExp('export\\s+default\\s+function\\s+([A-Za-z0-9_]+)'));
                 rc = `<!DOCTYPE html><html lang="zh-TW"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">` + 
                      `<script src="https://unpkg.com/react@18/umd/react.production.min.js">\x3C/script>` + 
                      `<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js">\x3C/script>` + 
@@ -431,7 +566,11 @@
         function refreshPreview() { if (currentRenderCode) document.getElementById('preview-iframe').srcdoc = currentRenderCode; }
 
         // ✨ 啟動時同時載入 Session、Gems 與 Models
-        window.onload = () => { loadSessions(); loadGems(); loadModels(); };
+        window.onload = () => { 
+            loadSessions(); 
+            loadGems(); 
+            loadModels(); 
+        };
     </script>
 </body>
 </html>
