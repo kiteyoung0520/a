@@ -98,7 +98,7 @@
                 </a>
             </div>
         </div>
-        <div class="p-4 border-t border-[#333] text-xs text-gray-500 text-center font-mono shrink-0">v86.27 Ultimate Edition</div>
+        <div class="p-4 border-t border-[#333] text-xs text-gray-500 text-center font-mono shrink-0">v86.35 Ultimate Rescue</div>
     </aside>
 
     <!-- Main Chat Area -->
@@ -220,13 +220,16 @@
     <div id="sidebar-overlay" class="fixed inset-0 bg-black/50 z-20 hidden md:hidden" onclick="toggleSidebar()"></div>
 
     <script>
-        // ⚠️ 請確認此處替換為您最新部署的 Apps Script Web App URL
+        // ⚠️ 【非常重要】請將下方網址替換為您「剛剛最新部署」的 Google Apps Script Web App URL！
+        // 如果這個網址錯誤，或者後端未設定為「所有人 (Anyone)」，將會導致 TypeError: Failed to fetch 錯誤。
         const GAS_URL = "https://script.google.com/macros/s/AKfycbwsng4RBCTX67my46U4fv7BhDYT0CIZt95dL7DNCFJTGUJLZFd_854vRGeUsQ1_BjG9/exec";
 
         marked.use({
             renderer: {
-                link(hrefOrToken, title, text) {
-                    let h = hrefOrToken.href || hrefOrToken, t = hrefOrToken.title || title, txt = hrefOrToken.text || text;
+                link: function(hrefOrToken, title, text) {
+                    let h = hrefOrToken.href || hrefOrToken;
+                    let t = hrefOrToken.title || title;
+                    let txt = hrefOrToken.text || text;
                     return `<a href="${h}" ${t ? `title="${t}"` : ''} target="_blank" rel="noopener noreferrer">${txt}</a>`;
                 }
             }
@@ -273,7 +276,7 @@
             if (isAutoPlay && !document.getElementById('voice-output-toggle').checked) return false;
             if (!window.speechSynthesis) return false; window.speechSynthesis.cancel(); 
             const bt = String.fromCharCode(96, 96, 96);
-            let cleanText = text.replace(new RegExp(bt + '[\\s\\S]*?' + bt, 'g'), '').replace(new RegExp('https?:\\/\\/[^\\s]+', 'g'), '網址').replace(new RegExp('[*_#~|]', 'g'), '').trim();
+            let cleanText = text.replace(new RegExp(bt + '[\\s\\S]*?' + bt, 'g'), '').replace(new RegExp('https?:\\/\\/[^\\s]+', 'g'), '網址').replace(new RegExp('[*_#`~|]', 'g'), '').trim();
             if (!cleanText) return false;
             let utterance = new SpeechSynthesisUtterance(cleanText);
             let v = window.speechSynthesis.getVoices(), sv = null;
@@ -311,7 +314,45 @@
         });
         userInput.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { if (window.innerWidth < 768) return; e.preventDefault(); isWaiting ? stopGeneration() : sendMessage(); } });
 
-        // ✨ 修改歷史並重新生成 (時光機功能)
+        // 🚨 顯示全域錯誤橫幅 (防止靜默報錯)
+        function showConnectionError() {
+            const chat = document.getElementById('chat-container');
+            if (chat.innerHTML.includes('連線嚴重失敗')) return; 
+            const errDiv = document.createElement('div');
+            errDiv.className = "max-w-3xl mx-auto w-full bg-red-900/20 border border-red-500/50 rounded-2xl p-6 text-red-200 mt-4 shadow-xl";
+            errDiv.innerHTML = `
+                <h3 class="text-xl font-bold mb-3 flex items-center gap-2"><span class="material-symbols-rounded">error</span> 連線嚴重失敗 (CORS / 權限錯誤)</h3>
+                <p class="mb-3">您的前端無法與 Google Apps Script 建立連線。這 <strong>不是</strong> 程式碼的問題，而是 Google 環境的限制，請務必完成以下兩點檢查：</p>
+                <ol class="list-decimal pl-5 space-y-2 mb-4">
+                    <li><strong>部署權限錯誤：</strong> 請回到 Apps Script 編輯器，點擊右上角「部署」➔「管理部署作業」➔ 編輯 ➔ 建立新版本。<strong>「誰可以存取 (Who has access)」務必設定為「所有人 (Anyone)」</strong>。</li>
+                    <li><strong>多帳號衝突 (最常見)：</strong> 如果您的瀏覽器同時登入了兩個以上的 Google 帳號，Google 伺服器會阻擋連線。<strong>請務必使用「無痕視窗 (Incognito)」</strong>開啟這個網頁來測試！</li>
+                    <li><strong>更新網址：</strong> 部署新版本後，務必將新的網址貼到程式碼第 218 行的 <code>GAS_URL</code> 中。</li>
+                </ol>
+            `;
+            chat.appendChild(errDiv);
+            chat.scrollTop = chat.scrollHeight;
+        }
+
+        // 💡 終極修復：回退到最純粹的 fetch 寫法，並加入全域錯誤攔截
+        async function fetchFromGAS(payload) {
+            try {
+                const res = await fetch(GAS_URL, { 
+                    method: 'POST', 
+                    headers: {
+                        'Content-Type': 'text/plain;charset=utf-8' // 強制作為簡單請求 (Simple Request)，避免觸發 OPTIONS preflight
+                    },
+                    body: JSON.stringify(payload)
+                });
+                
+                if (!res.ok) throw new Error(`伺服器連線失敗 (HTTP ${res.status})。`);
+                return await res.json();
+            } catch (err) {
+                console.error("Fetch Error:", err);
+                showConnectionError(); // 觸發全域錯誤橫幅
+                throw err;
+            }
+        }
+
         async function sendEditAndRegenerate(oldText, newText) {
             if (isWaiting) return;
             if (window.speechSynthesis) window.speechSynthesis.cancel(); 
@@ -339,18 +380,21 @@
                 youtube_id: null, 
                 gem_prompt: agp, 
                 gem_model: agm,
-                selected_model: ms.value // ✨ 傳送全域模型參數
+                selected_model: ms.value 
             };
             
             toggleSendButton(true); const lid = appendLoading(); abortController = new AbortController(); 
 
             try {
-                const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(payload), signal: abortController.signal });
-                const data = await res.json(); removeLoading(lid);
+                const data = await fetchFromGAS(payload);
+                removeLoading(lid);
                 if (data.status === "error") throw new Error(data.error || "伺服器錯誤");
                 if (data.reply) { appendMessage('ai', data.reply, data.image ? `data:${data.mime};base64,${data.image}` : null, data.model); if (!speakText(data.reply, true) && document.getElementById('continuous-mode-toggle').checked) setTimeout(startRecording, 500); }
                 loadSessions(); 
-            } catch (err) { removeLoading(lid); appendMessage('ai', err.name === 'AbortError' ? `🛑 **生成已中止。**` : `❌ 執行失敗：\n\`\`\`text\n${err.message}\n\`\`\``); } 
+            } catch (err) { 
+                removeLoading(lid); 
+                appendMessage('ai', err.name === 'AbortError' ? `🛑 **生成已中止。**` : `❌ 執行失敗：\n\`\`\`text\n${err.message}\n\`\`\``); 
+            } 
             finally { toggleSendButton(false); abortController = null; }
         }
 
@@ -391,18 +435,21 @@
                 youtube_id: currentYouTubeId, 
                 gem_prompt: agp, 
                 gem_model: agm,
-                selected_model: ms.value // ✨ 傳送全域模型參數
+                selected_model: ms.value 
             };
             
             clearUpload(); toggleSendButton(true); const lid = appendLoading(); abortController = new AbortController(); 
 
             try {
-                const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(payload), signal: abortController.signal });
-                const data = await res.json(); removeLoading(lid);
+                const data = await fetchFromGAS(payload);
+                removeLoading(lid);
                 if (data.status === "error") throw new Error(data.error || "伺服器錯誤");
                 if (data.reply) { appendMessage('ai', data.reply, data.image ? `data:${data.mime};base64,${data.image}` : null, data.model); if (!speakText(data.reply, true) && document.getElementById('continuous-mode-toggle').checked) setTimeout(startRecording, 500); }
                 loadSessions(); 
-            } catch (err) { removeLoading(lid); appendMessage('ai', err.name === 'AbortError' ? `🛑 **生成已中止。**` : `❌ 執行失敗：\n\`\`\`text\n${err.message}\n\`\`\``); } 
+            } catch (err) { 
+                removeLoading(lid); 
+                appendMessage('ai', err.name === 'AbortError' ? `🛑 **生成已中止。**` : `❌ 執行失敗：\n\`\`\`text\n${err.message}\n\`\`\``); 
+            } 
             finally { toggleSendButton(false); abortController = null; }
         }
 
@@ -418,7 +465,6 @@
         function setDocPayload(n, t) { currentDocumentName = n; currentDocumentText = t; document.getElementById('doc-filename').innerText = n; document.getElementById('doc-preview').classList.remove('hidden'); document.getElementById('image-preview').classList.add('hidden'); document.getElementById('youtube-preview').classList.add('hidden'); document.getElementById('upload-preview-container').classList.remove('hidden'); }
         function clearUpload() { currentImageData = currentDocumentText = currentDocumentName = currentYouTubeId = null; document.getElementById('upload-preview-container').classList.add('hidden'); document.getElementById('file-upload').value = ''; }
 
-        // ✨ UI：注入編輯 (Edit) 與回收刪除 (Soft-delete) 按鈕的邏輯
         function appendMessage(role, text, imageSrc = null, model = null) {
             const isAI = role === 'ai', w = document.createElement('div'); w.className = `flex gap-3 sm:gap-4 max-w-4xl mx-auto w-full group ${!isAI ? 'flex-row-reverse' : ''}`;
             let b = `<div class="flex-1 ${!isAI ? 'text-right' : ''} space-y-2 max-w-[90%] sm:max-w-[85%] relative min-w-0">`;
@@ -427,7 +473,6 @@
             if (imageSrc) b += `<img src="${imageSrc}" class="rounded-xl border border-[#333] mb-2 max-w-full">`;
             if (text) b += `<div class="prose prose-invert text-gray-200 bg-[#1e1f22] p-4 sm:p-5 rounded-2xl rounded-tl-none shadow-sm text-base sm:text-lg leading-relaxed text-left">${isAI ? marked.parse(text) : text.replace(new RegExp('\\n', 'g'), '<br>')}</div>`;
             
-            // 動態功能按鈕區
             b += `<div class="flex items-center gap-2 mt-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity ${!isAI ? 'justify-end' : ''}">`;
             if (isAI && text) {
                 b += `<button class="copy-btn p-1.5 text-gray-400 hover:text-white hover:bg-[#333] rounded-md" title="複製"><span class="material-symbols-rounded text-[16px] sm:text-[18px]">content_copy</span></button>`;
@@ -444,7 +489,6 @@
             w.innerHTML = `<div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center shrink-0 shadow-lg ${isAI ? 'bg-blue-600' : 'bg-gray-700'}"><span class="material-symbols-rounded text-white text-[18px] sm:text-xl">${isAI ? 'smart_toy' : 'person'}</span></div>` + b;
             chatContainer.appendChild(w);
 
-            // Artifacts 渲染按鈕
             if (isAI) { w.querySelectorAll('pre code').forEach(c => { if (c.className.includes('language-html') || c.className.includes('language-jsx') || c.className.includes('language-javascript')) { let btn = document.createElement('button'); btn.className = "absolute top-2 sm:top-3 right-2 sm:right-3 bg-blue-600 hover:bg-blue-500 text-white text-[10px] sm:text-xs px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg flex items-center gap-1 shadow-lg"; btn.innerHTML = '<span class="material-symbols-rounded text-[12px] sm:text-sm">play_circle</span> 預覽'; btn.onclick = () => openPreview(c.innerText); c.parentElement.appendChild(btn); } }); }
             
             if (isAI && text) { 
@@ -452,7 +496,6 @@
                 w.querySelector('.speak-btn').onclick = () => speakText(text, false); 
             } 
             
-            // 綁定「編輯/時光機」事件
             if (!isAI && text) {
                 w.querySelector('.edit-btn').onclick = () => {
                     const contentDiv = w.querySelector('.prose');
@@ -495,20 +538,16 @@
                 };
             }
 
-            // 綁定「刪除/回收」事件
             if (w.querySelector('.delete-btn')) {
                 w.querySelector('.delete-btn').onclick = () => {
                     if (confirm("確定要刪除這則訊息嗎？\n(刪除後系統將徹底忘記這段對話)")) {
                         w.remove();
-                        fetch(GAS_URL, {
-                            method: 'POST',
-                            body: JSON.stringify({
-                                mode: 'system',
-                                action: 'delete_message',
-                                session_id: currentSessionId,
-                                target_text: text,
-                                target_role: role
-                            })
+                        fetchFromGAS({
+                            mode: 'system',
+                            action: 'delete_message',
+                            session_id: currentSessionId,
+                            target_text: text,
+                            target_role: role
                         });
                     }
                 };
@@ -524,15 +563,25 @@
         function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); document.getElementById('sidebar-overlay').classList.toggle('hidden'); }
         function startNewSession() { currentSessionId = generateUUID(); chatContainer.innerHTML = ''; appendMessage('ai', "您好！已為您開啟新的對話。\n您可以透過下方的「💎 角色選單」切換專長，或使用「🧠 模型選單」自由升降級我的智商大腦！"); if (window.innerWidth < 768) toggleSidebar(); loadSessions(); }
         
-        async function switchSession(id, title) { if (id === currentSessionId && chatContainer.children.length > 1) return; currentSessionId = id; document.getElementById('mobile-title').innerText = title; chatContainer.innerHTML = ''; const lid = appendLoading(); if (window.innerWidth < 768) toggleSidebar(); try { const d = await (await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ mode: 'system', action: 'load_session', session_id: id }) })).json(); removeLoading(lid); if (Array.isArray(d.logs)) d.logs.forEach(l => appendMessage(l.role === 'ai' ? 'ai' : 'user', l.text)); loadSessions(); } catch (e) {} }
+        async function switchSession(id, title) { if (id === currentSessionId && chatContainer.children.length > 1) return; currentSessionId = id; document.getElementById('mobile-title').innerText = title; chatContainer.innerHTML = ''; const lid = appendLoading(); if (window.innerWidth < 768) toggleSidebar(); try { const d = await fetchFromGAS({ mode: 'system', action: 'load_session', session_id: id }); removeLoading(lid); if (Array.isArray(d.logs)) d.logs.forEach(l => appendMessage(l.role === 'ai' ? 'ai' : 'user', l.text)); loadSessions(); } catch (e) { removeLoading(lid); } }
         
-        // 載入 Gems 列表
-        async function loadGems() { try { const d = await (await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ mode: 'system', action: 'get_gems' }) })).json(); if (d && d.gems) { currentGemsList = d.gems; const s = document.getElementById('gem-selector'); s.innerHTML = '<option value="">🤖 全能助理</option>'; currentGemsList.forEach((g, i) => s.innerHTML += `<option value="${i}">💎 ${g.name}</option>`); } } catch (e) {} }
+        async function loadGems() { 
+            try { 
+                const d = await fetchFromGAS({ mode: 'system', action: 'get_gems' }); 
+                if (d && d.gems) { 
+                    currentGemsList = d.gems; 
+                    const s = document.getElementById('gem-selector'); 
+                    s.innerHTML = '<option value="">🤖 全能助理</option>'; 
+                    currentGemsList.forEach((g, i) => s.innerHTML += `<option value="${i}">💎 ${g.name}</option>`); 
+                } 
+            } catch (e) { 
+                console.error("Load Gems error:", e); 
+            } 
+        }
         
-        // ✨ 新增：拉取全域模型清單
         async function loadModels() { 
             try { 
-                const d = await (await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ mode: 'system', action: 'get_models' }) })).json(); 
+                const d = await fetchFromGAS({ mode: 'system', action: 'get_models' }); 
                 const s = document.getElementById('model-selector'); 
                 s.innerHTML = '<option value="">🧠 預設模型 (自動)</option>'; 
                 if (d && d.models && d.models.length > 0) { 
@@ -542,10 +591,29 @@
                     s.innerHTML += `<option value="gemini-2.5-pro">🧠 專家 (2.5 Pro)</option>`;
                     s.innerHTML += `<option value="gemini-2.0-pro-exp-02-05">💡 實驗 (2.0 Pro Exp)</option>`;
                 }
-            } catch (e) {} 
+            } catch (e) { 
+                console.error("Load Models error:", e); 
+            } 
         }
 
-        async function loadSessions() { try { const d = await (await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ mode: 'system', action: 'get_session_list' }) })).json(); const l = document.getElementById('session-list'); l.innerHTML = ''; if (Array.isArray(d.sessions)) d.sessions.forEach(s => { const act = s.id === currentSessionId, pin = s.pinned, i = document.createElement('div'); i.className = `group flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all ${act ? 'active-session' : 'text-gray-400 hover:bg-[#2a2b2f] hover:text-white'}`; i.innerHTML = `<div class="flex items-center gap-3 truncate flex-1 min-w-0"><span class="material-symbols-rounded text-lg shrink-0 ${pin ? 'pinned-icon' : ''}">${pin ? 'push_pin' : (act ? 'chat_bubble' : 'chat')}</span><span class="truncate text-sm font-medium tracking-wide">${s.title}</span></div><div class="flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 shrink-0 ml-2 transition-opacity"><button class="p-1 pin-btn ${pin ? 'text-blue-500' : ''} hover:bg-[#333] rounded-md transition-colors"><span class="material-symbols-rounded text-[16px]">push_pin</span></button><button class="p-1 edit-btn hover:text-blue-400 hover:bg-[#333] rounded-md transition-colors"><span class="material-symbols-rounded text-[16px]">edit</span></button><button class="p-1 del-btn hover:text-red-400 hover:bg-[#333] rounded-md transition-colors"><span class="material-symbols-rounded text-[16px]">delete</span></button></div>`; i.onclick = () => switchSession(s.id, s.title); i.querySelector('.pin-btn').onclick = (e) => { e.stopPropagation(); fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ mode: 'system', action: 'pin_session', session_id: s.id, is_pinned: !pin }) }).then(loadSessions); }; i.querySelector('.edit-btn').onclick = (e) => { e.stopPropagation(); const n = prompt("重命名：", s.title); if (n && n.trim()) fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ mode: 'system', action: 'rename_session', session_id: s.id, new_title: n }) }).then(loadSessions); }; i.querySelector('.del-btn').onclick = (e) => { e.stopPropagation(); if (confirm("確定要刪除嗎？")) fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ mode: 'system', action: 'delete_session', session_id: s.id }) }).then(() => s.id === currentSessionId ? startNewSession() : loadSessions()); }; l.appendChild(i); }); } catch (e) {} }
+        async function loadSessions() { 
+            try { 
+                const d = await fetchFromGAS({ mode: 'system', action: 'get_session_list' }); 
+                const l = document.getElementById('session-list'); l.innerHTML = ''; 
+                if (Array.isArray(d.sessions)) d.sessions.forEach(s => { 
+                    const act = s.id === currentSessionId, pin = s.pinned, i = document.createElement('div'); 
+                    i.className = `group flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all ${act ? 'active-session' : 'text-gray-400 hover:bg-[#2a2b2f] hover:text-white'}`; 
+                    i.innerHTML = `<div class="flex items-center gap-3 truncate flex-1 min-w-0"><span class="material-symbols-rounded text-lg shrink-0 ${pin ? 'pinned-icon' : ''}">${pin ? 'push_pin' : (act ? 'chat_bubble' : 'chat')}</span><span class="truncate text-sm font-medium tracking-wide">${s.title}</span></div><div class="flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 shrink-0 ml-2 transition-opacity"><button class="p-1 pin-btn ${pin ? 'text-blue-500' : ''} hover:bg-[#333] rounded-md transition-colors"><span class="material-symbols-rounded text-[16px]">push_pin</span></button><button class="p-1 edit-btn hover:text-blue-400 hover:bg-[#333] rounded-md transition-colors"><span class="material-symbols-rounded text-[16px]">edit</span></button><button class="p-1 del-btn hover:text-red-400 hover:bg-[#333] rounded-md transition-colors"><span class="material-symbols-rounded text-[16px]">delete</span></button></div>`; 
+                    i.onclick = () => switchSession(s.id, s.title); 
+                    i.querySelector('.pin-btn').onclick = (e) => { e.stopPropagation(); fetchFromGAS({ mode: 'system', action: 'pin_session', session_id: s.id, is_pinned: !pin }).then(loadSessions); }; 
+                    i.querySelector('.edit-btn').onclick = (e) => { e.stopPropagation(); const n = prompt("重命名：", s.title); if (n && n.trim()) fetchFromGAS({ mode: 'system', action: 'rename_session', session_id: s.id, new_title: n }).then(loadSessions); }; 
+                    i.querySelector('.del-btn').onclick = (e) => { e.stopPropagation(); if (confirm("確定要刪除嗎？")) fetchFromGAS({ mode: 'system', action: 'delete_session', session_id: s.id }).then(() => s.id === currentSessionId ? startNewSession() : loadSessions()); }; 
+                    l.appendChild(i); 
+                }); 
+            } catch (e) { 
+                console.error("Load Sessions error:", e); 
+            } 
+        }
 
         function openPreview(code) {
             let rc = code;
@@ -553,19 +621,18 @@
                 let cc = code.replace(new RegExp('import\\s+.*?from\\s+[\'"].*?[\'"];?', 'g'), '').replace(new RegExp('export\\s+default\\s+function', 'g'), 'function');
                 let cm = code.replace(new RegExp('import\\s+.*?from\\s+[\'"].*?[\'"];?', 'g'), '').match(new RegExp('export\\s+default\\s+function\\s+([A-Za-z0-9_]+)'));
                 rc = `<!DOCTYPE html><html lang="zh-TW"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">` + 
-                     `<script src="https://unpkg.com/react@18/umd/react.production.min.js">\x3C/script>` + 
-                     `<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js">\x3C/script>` + 
-                     `<script src="https://unpkg.com/@babel/standalone/babel.min.js">\x3C/script>` + 
-                     `<script src="https://cdn.tailwindcss.com">\x3C/script>` + 
-                     `<script src="https://unpkg.com/lucide@latest">\x3C/script>` + 
-                     `</head><body class="bg-gray-50"><div id="root"></div><script type="text/babel">const { useState, useEffect, useRef, useMemo, useCallback } = React; try { ${cc} const root = ReactDOM.createRoot(document.getElementById('root')); root.render(<${cm ? cm[1] : 'App'} />); setTimeout(() => { if(window.lucide) window.lucide.createIcons(); }, 100); } catch(err) { document.getElementById('root').innerHTML = '<div class="p-4 text-red-700">渲染錯誤:<br>' + err.message + '</div>'; } \x3C/script></body></html>`;
+                     `<script src="https://unpkg.com/react@18/umd/react.production.min.js"><\/script>` + 
+                     `<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"><\/script>` + 
+                     `<script src="https://unpkg.com/@babel/standalone/babel.min.js"><\/script>` + 
+                     `<script src="https://cdn.tailwindcss.com"><\/script>` + 
+                     `<script src="https://unpkg.com/lucide@latest"><\/script>` + 
+                     `</head><body class="bg-gray-50"><div id="root"></div><script type="text/babel">const { useState, useEffect, useRef, useMemo, useCallback } = React; try { ${cc} const root = ReactDOM.createRoot(document.getElementById('root')); root.render(<${cm ? cm[1] : 'App'} />); setTimeout(() => { if(window.lucide) window.lucide.createIcons(); }, 100); } catch(err) { document.getElementById('root').innerHTML = '<div class="p-4 text-red-700">渲染錯誤:<br>' + err.message + '</div>'; } <\/script></body></html>`;
             }
             currentRenderCode = rc; document.getElementById('preview-modal').classList.remove('hidden'); document.getElementById('preview-modal').classList.add('flex'); document.getElementById('preview-iframe').srcdoc = rc;
         }
         function closePreview() { document.getElementById('preview-modal').classList.add('hidden'); document.getElementById('preview-modal').classList.remove('flex'); document.getElementById('preview-iframe').srcdoc = ''; }
         function refreshPreview() { if (currentRenderCode) document.getElementById('preview-iframe').srcdoc = currentRenderCode; }
 
-        // ✨ 啟動時同時載入 Session、Gems 與 Models
         window.onload = () => { 
             loadSessions(); 
             loadGems(); 
