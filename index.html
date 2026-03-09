@@ -98,7 +98,7 @@
                 </a>
             </div>
         </div>
-        <div class="p-4 border-t border-[#333] text-xs text-gray-500 text-center font-mono shrink-0">v86.27 Ultimate Edition</div>
+        <div class="p-4 border-t border-[#333] text-xs text-gray-500 text-center font-mono shrink-0">v86.31 Ultimate Edition</div>
     </aside>
 
     <!-- Main Chat Area -->
@@ -145,7 +145,6 @@
                 <div class="bg-[#1e1f22] rounded-2xl border border-[#333] shadow-[0_-10px_40px_rgba(0,0,0,0.5)] focus-within:border-blue-500 transition-all p-1.5 sm:p-2 mx-1 sm:mx-0">
                     <div class="flex items-center flex-wrap gap-2 sm:gap-3 px-2 sm:px-3 mb-1 sm:mb-2 pt-1 border-b border-[#333] pb-1.5 sm:pb-2">
                         
-                        <!-- Gems 角色選擇器 -->
                         <div class="relative flex items-center shrink-0">
                             <span class="absolute left-2 text-blue-400 material-symbols-rounded text-[14px] pointer-events-none">diamond</span>
                             <select id="gem-selector" class="pl-7 pr-6 py-1.5 bg-[#2a2b2f] hover:bg-[#333] text-blue-100 text-xs font-bold tracking-wide rounded-lg border border-[#444] outline-none focus:border-blue-500 transition-all appearance-none cursor-pointer max-w-[130px] sm:max-w-[160px] truncate shadow-sm">
@@ -154,7 +153,6 @@
                             <span class="absolute right-1.5 text-gray-400 material-symbols-rounded text-[16px] pointer-events-none">arrow_drop_down</span>
                         </div>
 
-                        <!-- ✨ 全域模型選擇器 -->
                         <div class="relative flex items-center mr-auto shrink-0">
                             <span class="absolute left-2 text-purple-400 material-symbols-rounded text-[14px] pointer-events-none">memory</span>
                             <select id="model-selector" class="pl-7 pr-6 py-1.5 bg-[#2a2b2f] hover:bg-[#333] text-purple-100 text-xs font-bold tracking-wide rounded-lg border border-[#444] outline-none focus:border-purple-500 transition-all appearance-none cursor-pointer max-w-[130px] sm:max-w-[160px] truncate shadow-sm">
@@ -163,7 +161,6 @@
                             <span class="absolute right-1.5 text-gray-400 material-symbols-rounded text-[16px] pointer-events-none">arrow_drop_down</span>
                         </div>
 
-                        <!-- 收納式進階設定選單 -->
                         <div class="relative shrink-0">
                             <button type="button" id="settings-menu-btn" onclick="toggleSettingsMenu()" class="flex items-center gap-1.5 pl-2.5 pr-1.5 py-1.5 bg-[#2a2b2f] hover:bg-[#333] text-gray-300 text-xs font-bold tracking-wide rounded-lg border border-[#444] outline-none transition-all shadow-sm">
                                 <span class="material-symbols-rounded text-[16px] text-gray-400">tune</span>
@@ -171,7 +168,6 @@
                                 <span id="settings-menu-chevron" class="material-symbols-rounded text-[18px] text-gray-500 transition-transform duration-200">expand_less</span>
                             </button>
                             
-                            <!-- 下拉面板 -->
                             <div id="settings-dropdown" class="hidden absolute bottom-full right-0 mb-3 w-40 bg-[#2a2b2f] border border-[#444] rounded-xl shadow-[0_-10px_40px_rgba(0,0,0,0.5)] p-3 flex flex-col gap-4 z-50">
                                 <label class="relative flex items-center justify-between cursor-pointer group">
                                     <span class="text-xs font-medium text-gray-300 group-hover:text-purple-400 transition-colors flex items-center gap-1.5"><span class="material-symbols-rounded text-[16px]">palette</span> 單純繪圖</span>
@@ -220,7 +216,6 @@
     <div id="sidebar-overlay" class="fixed inset-0 bg-black/50 z-20 hidden md:hidden" onclick="toggleSidebar()"></div>
 
     <script>
-        // ⚠️ 請確認此處替換為您最新部署的 Apps Script Web App URL
         const GAS_URL = "https://script.google.com/macros/s/AKfycbwsng4RBCTX67my46U4fv7BhDYT0CIZt95dL7DNCFJTGUJLZFd_854vRGeUsQ1_BjG9/exec";
 
         marked.use({
@@ -301,6 +296,107 @@
         function toggleSendButton(w) { isWaiting = w; sendBtnIcon.innerText = w ? 'stop' : 'send'; sendBtn.className = w ? "p-2.5 sm:p-3 shrink-0 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-all shadow-md flex items-center justify-center" : "p-2.5 sm:p-3 shrink-0 bg-white text-black rounded-xl hover:bg-gray-200 transition-all shadow-md flex items-center justify-center"; sendBtn.onclick = w ? stopGeneration : sendMessage; }
         sendBtn.onclick = sendMessage; function stopGeneration() { if (abortController) { abortController.abort(); abortController = null; } }
 
+        // ==========================================
+        // ✨ 新增：雙軌制 PPTX 處理機制 (雲端轉檔 vs 本機解析)
+        // ==========================================
+        async function handleFileUpload(e) {
+            const f = e.target.files[0]; if (!f) return; const r = new FileReader(), ext = f.name.split('.').pop().toLowerCase();
+            
+            if (f.type.startsWith('image/')) { r.onload = (ev) => { currentImageData = ev.target.result; currentMimeType = f.type; document.getElementById('image-preview').src = currentImageData; document.getElementById('image-preview').classList.remove('hidden'); document.getElementById('doc-preview').classList.add('hidden'); document.getElementById('youtube-preview').classList.add('hidden'); document.getElementById('upload-preview-container').classList.remove('hidden'); }; r.readAsDataURL(f); } 
+            else if (f.type === 'application/pdf' || ext === 'pdf') { const lid = appendLoading(); try { await loadPdfJs(); r.onload = async (ev) => { try { const pdf = await pdfjsLib.getDocument(new Uint8Array(ev.target.result)).promise; let t = ""; for (let i=1; i<=pdf.numPages; i++) t += (await (await pdf.getPage(i)).getTextContent()).items.map(s => s.str).join(' ') + "\n"; setDocPayload(f.name, t); } catch (err) { alert("PDF 解析失敗"); } finally { removeLoading(lid); } }; r.readAsArrayBuffer(f); } catch (err) { removeLoading(lid); alert("載入 PDF 引擎失敗"); } } 
+            else if (ext === 'docx') { const lid = appendLoading(); try { await loadMammoth(); r.onload = async (ev) => { try { setDocPayload(f.name, (await mammoth.extractRawText({ arrayBuffer: ev.target.result })).value); } catch(err) { alert("Word 解析失敗"); } finally { removeLoading(lid); } }; r.readAsArrayBuffer(f); } catch (err) { removeLoading(lid); alert("載入 Word 引擎失敗"); } } 
+            else if (ext === 'xlsx' || ext === 'csv') { const lid = appendLoading(); try { await loadXlsx(); r.onload = (ev) => { try { const wb = XLSX.read(ev.target.result, { type: 'array' }); let t = ""; wb.SheetNames.forEach(n => { t += `\n--- 表單: ${n} ---\n`; let c = XLSX.utils.sheet_to_csv(wb.Sheets[n]); t += c.length > 500000 ? c.substring(0, 500000) + "\n...[截斷]..." : c; }); setDocPayload(f.name, t); } catch(err) { alert("Excel 解析失敗"); } finally { removeLoading(lid); } }; r.readAsArrayBuffer(f); } catch (err) { removeLoading(lid); alert("載入 Excel 引擎失敗"); } } 
+            
+            // 🚀 雙軌降級架構
+            else if (ext === 'pptx') { 
+                const lid = appendLoading(); 
+                
+                // Track 1: 若小於 5MB，發送給 GAS 進行雲端完美轉檔與解析
+                if (f.size < 5 * 1024 * 1024) { 
+                    try {
+                        r.onload = async (ev) => {
+                            try {
+                                const base64Data = ev.target.result.split(',')[1];
+                                const res = await fetch(GAS_URL, {
+                                    method: 'POST',
+                                    body: JSON.stringify({ mode: 'system', action: 'parse_pptx', file_name: f.name, file_data: base64Data })
+                                });
+                                const data = await res.json();
+                                if (data.status === 'success') {
+                                    setDocPayload(f.name, data.text);
+                                } else {
+                                    throw new Error(data.message || "雲端轉檔失敗");
+                                }
+                            } catch (err) {
+                                console.warn("雲端 PPTX 解析失敗，啟動備用引擎...", err);
+                                // 錯誤發生時 (例如 API 未開)，自動攔截並降級回本機 JSZip 引擎
+                                fallbackJSZipParse(f, ev.target.result.split(',')[1], true, lid);
+                            } finally {
+                                removeLoading(lid);
+                            }
+                        };
+                        r.readAsDataURL(f);
+                    } catch (err) { removeLoading(lid); }
+                } 
+                // Track 2: 若大於 5MB，直接繞過 GAS，保護伺服器不 Crash，改走本機輕量解析
+                else {
+                    try {
+                        r.onload = (ev) => fallbackJSZipParse(f, ev.target.result, false, lid);
+                        r.readAsArrayBuffer(f);
+                    } catch (err) { removeLoading(lid); }
+                }
+            } 
+            else { r.onload = (ev) => setDocPayload(f.name, ev.target.result); r.readAsText(f); }
+        }
+
+        // 獨立出 JSZip 本機備用解析引擎
+        async function fallbackJSZipParse(fileObj, fileData, isBase64, loaderId) {
+            try { 
+                await loadJszip(); 
+                const zip = await (new JSZip()).loadAsync(fileData, isBase64 ? { base64: true } : {}); 
+                let t = `【系統解析：簡報檔名 ${fileObj.name} (啟動本機輕量模式)】\n\n`; 
+                const sFiles = Object.keys(zip.files).filter(n => n.match(new RegExp('^ppt/slides/slide\\\\d+\\\\.xml$'))).sort((a, b) => parseInt(a.match(new RegExp('(\\\\d+)\\\\.xml$'))[1]) - parseInt(b.match(new RegExp('(\\\\d+)\\\\.xml$'))[1]));
+                const nFiles = Object.keys(zip.files).filter(n => n.match(new RegExp('^ppt/notesSlides/notesSlide\\\\d+\\\\.xml$')));
+                const parser = new DOMParser(); 
+                
+                for (const p of sFiles) { 
+                    const sn = p.match(new RegExp('(\\\\d+)\\\\.xml$'))[1]; 
+                    t += `--- 第 ${sn} 頁 ---\n`; 
+                    const sx = await zip.file(p).async("string"); 
+                    if (sx) { 
+                        const xmlDoc = parser.parseFromString(sx, "text/xml"); 
+                        const textNodes = xmlDoc.getElementsByTagName("a:t"); 
+                        let extText = ""; 
+                        for (let i = 0; i < textNodes.length; i++) extText += textNodes[i].textContent + " "; 
+                        t += `[投影片內容]:\n${extText.trim()}\n`; 
+                    } 
+                    const np = `ppt/notesSlides/notesSlide${sn}.xml`; 
+                    if (nFiles.includes(np)) { 
+                        const nx = await zip.file(np).async("string"); 
+                        if (nx) { 
+                            const xmlDoc = parser.parseFromString(nx, "text/xml"); 
+                            const textNodes = xmlDoc.getElementsByTagName("a:t"); 
+                            let extText = ""; 
+                            for (let i = 0; i < textNodes.length; i++) extText += textNodes[i].textContent + " "; 
+                            if (extText.trim()) t += `[講者備忘錄]:\n${extText.trim()}\n`; 
+                        } 
+                    } 
+                    t += `\n`; 
+                } 
+                setDocPayload(fileObj.name, t); 
+            } catch (err) { 
+                alert("PPTX 本機備用解析失敗"); 
+            } finally { 
+                removeLoading(loaderId); 
+            }
+        }
+
+        function setDocPayload(n, t) { currentDocumentName = n; currentDocumentText = t; document.getElementById('doc-filename').innerText = n; document.getElementById('doc-preview').classList.remove('hidden'); document.getElementById('image-preview').classList.add('hidden'); document.getElementById('youtube-preview').classList.add('hidden'); document.getElementById('upload-preview-container').classList.remove('hidden'); }
+        function clearUpload() { currentImageData = currentDocumentText = currentDocumentName = currentYouTubeId = null; document.getElementById('upload-preview-container').classList.add('hidden'); document.getElementById('file-upload').value = ''; }
+
+        // ==========================================
+        // 核心對話與渲染邏輯
+        // ==========================================
         userInput.addEventListener('paste', function(e) {
             const pt = (e.clipboardData || window.clipboardData).getData('text');
             const ytMatch = pt.match(new RegExp('(?:youtube\\.com/(?:[^/]+/.+/|(?:v|e(?:mbed)?)/|.*[?&]v=)|youtu\\.be/)([^"&?/\\s]{11})', 'i'));
@@ -311,209 +407,66 @@
         });
         userInput.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { if (window.innerWidth < 768) return; e.preventDefault(); isWaiting ? stopGeneration() : sendMessage(); } });
 
-        // ✨ 修改歷史並重新生成 (時光機功能)
         async function sendEditAndRegenerate(oldText, newText) {
             if (isWaiting) return;
             if (window.speechSynthesis) window.speechSynthesis.cancel(); 
-            
-            let agp = null, agm = null;
-            const gs = document.getElementById('gem-selector');
-            const ms = document.getElementById('model-selector');
-            
+            let agp = null, agm = null; const gs = document.getElementById('gem-selector'); const ms = document.getElementById('model-selector');
             if (gs.value !== "") { agp = currentGemsList[parseInt(gs.value)].prompt; agm = currentGemsList[parseInt(gs.value)].model; }
-
-            let dMsg = newText;
-            if (agp) dMsg = `【使用角色：${currentGemsList[parseInt(gs.value)].name}${agm ? ` (${agm})` : ''}】\n${newText}`;
-
+            let dMsg = newText; if (agp) dMsg = `【使用角色：${currentGemsList[parseInt(gs.value)].name}${agm ? ` (${agm})` : ''}】\n${newText}`;
             appendMessage('user', dMsg, null);
-            
-            const payload = { 
-                mode: 'edit_and_regenerate',
-                old_text: oldText,
-                message: newText,
-                session_id: currentSessionId, 
-                file_data: null, mime_type: null, 
-                web_search: document.getElementById('web-search-toggle').checked, 
-                auto_image: document.getElementById('auto-image-toggle').checked, 
-                draw_mode: document.getElementById('draw-mode-toggle').checked, 
-                youtube_id: null, 
-                gem_prompt: agp, 
-                gem_model: agm,
-                selected_model: ms.value // ✨ 傳送全域模型參數
-            };
-            
+            const payload = { mode: 'edit_and_regenerate', old_text: oldText, message: newText, session_id: currentSessionId, file_data: null, mime_type: null, web_search: document.getElementById('web-search-toggle').checked, auto_image: document.getElementById('auto-image-toggle').checked, draw_mode: document.getElementById('draw-mode-toggle').checked, youtube_id: null, gem_prompt: agp, gem_model: agm, selected_model: ms.value };
             toggleSendButton(true); const lid = appendLoading(); abortController = new AbortController(); 
-
-            try {
-                const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(payload), signal: abortController.signal });
-                const data = await res.json(); removeLoading(lid);
-                if (data.status === "error") throw new Error(data.error || "伺服器錯誤");
-                if (data.reply) { appendMessage('ai', data.reply, data.image ? `data:${data.mime};base64,${data.image}` : null, data.model); if (!speakText(data.reply, true) && document.getElementById('continuous-mode-toggle').checked) setTimeout(startRecording, 500); }
-                loadSessions(); 
-            } catch (err) { removeLoading(lid); appendMessage('ai', err.name === 'AbortError' ? `🛑 **生成已中止。**` : `❌ 執行失敗：\n\`\`\`text\n${err.message}\n\`\`\``); } 
+            try { const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(payload), signal: abortController.signal }); const data = await res.json(); removeLoading(lid); if (data.status === "error") throw new Error(data.error || "伺服器錯誤"); if (data.reply) { appendMessage('ai', data.reply, data.image ? `data:${data.mime};base64,${data.image}` : null, data.model); if (!speakText(data.reply, true) && document.getElementById('continuous-mode-toggle').checked) setTimeout(startRecording, 500); } loadSessions(); } 
+            catch (err) { removeLoading(lid); appendMessage('ai', err.name === 'AbortError' ? `🛑 **生成已中止。**` : `❌ 執行失敗：\n\`\`\`text\n${err.message}\n\`\`\``); } 
             finally { toggleSendButton(false); abortController = null; }
         }
 
         async function sendMessage() {
-            clearTimeout(silenceTimer); stopRecording(); 
-            const text = userInput.value.trim();
-            if (!text && !currentImageData && !currentDocumentText && !currentYouTubeId) return;
-            if (isWaiting) return;
+            clearTimeout(silenceTimer); stopRecording(); const text = userInput.value.trim();
+            if (!text && !currentImageData && !currentDocumentText && !currentYouTubeId) return; if (isWaiting) return;
             if (window.speechSynthesis) window.speechSynthesis.cancel(); 
-
-            let agp = null, agm = null;
-            const gs = document.getElementById('gem-selector');
-            const ms = document.getElementById('model-selector');
-            
+            let agp = null, agm = null; const gs = document.getElementById('gem-selector'); const ms = document.getElementById('model-selector');
             if (gs.value !== "") { agp = currentGemsList[parseInt(gs.value)].prompt; agm = currentGemsList[parseInt(gs.value)].model; }
-
-            let dMsg = text;
-            if (currentDocumentName) dMsg = `📎 [文件: ${currentDocumentName}]\n${text}`;
-            if (currentYouTubeId) dMsg = `📺 [YouTube 影片]\n${text}`;
-            if (agp && !currentDocumentName && !currentYouTubeId) dMsg = `【使用角色：${currentGemsList[parseInt(gs.value)].name}${agm ? ` (${agm})` : ''}】\n${text}`;
-
+            let dMsg = text; if (currentDocumentName) dMsg = `📎 [文件: ${currentDocumentName}]\n${text}`; if (currentYouTubeId) dMsg = `📺 [YouTube 影片]\n${text}`; if (agp && !currentDocumentName && !currentYouTubeId) dMsg = `【使用角色：${currentGemsList[parseInt(gs.value)].name}${agm ? ` (${agm})` : ''}】\n${text}`;
             appendMessage('user', dMsg, currentImageData);
-            
-            let pText = text || "請分析此內容";
-            if (currentDocumentText) pText = `【檔案：${currentDocumentName}】\n${currentDocumentText}\n\n指令：${pText}`;
-            else if (currentYouTubeId) pText = `【影片】：https://www.youtube.com/watch?v=${currentYouTubeId}\n\n指令：${pText}`;
-
+            let pText = text || "請分析此內容"; if (currentDocumentText) pText = `【檔案：${currentDocumentName}】\n${currentDocumentText}\n\n指令：${pText}`; else if (currentYouTubeId) pText = `【影片】：https://www.youtube.com/watch?v=${currentYouTubeId}\n\n指令：${pText}`;
             userInput.value = ''; userInput.style.height = 'auto'; finalTranscript = ''; 
-            
-            const payload = { 
-                message: pText, 
-                session_id: currentSessionId, 
-                file_data: currentImageData ? currentImageData.split(',')[1] : null, 
-                mime_type: currentMimeType, 
-                web_search: document.getElementById('web-search-toggle').checked, 
-                auto_image: document.getElementById('auto-image-toggle').checked, 
-                draw_mode: document.getElementById('draw-mode-toggle').checked, 
-                youtube_id: currentYouTubeId, 
-                gem_prompt: agp, 
-                gem_model: agm,
-                selected_model: ms.value // ✨ 傳送全域模型參數
-            };
-            
+            const payload = { message: pText, session_id: currentSessionId, file_data: currentImageData ? currentImageData.split(',')[1] : null, mime_type: currentMimeType, web_search: document.getElementById('web-search-toggle').checked, auto_image: document.getElementById('auto-image-toggle').checked, draw_mode: document.getElementById('draw-mode-toggle').checked, youtube_id: currentYouTubeId, gem_prompt: agp, gem_model: agm, selected_model: ms.value };
             clearUpload(); toggleSendButton(true); const lid = appendLoading(); abortController = new AbortController(); 
-
-            try {
-                const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(payload), signal: abortController.signal });
-                const data = await res.json(); removeLoading(lid);
-                if (data.status === "error") throw new Error(data.error || "伺服器錯誤");
-                if (data.reply) { appendMessage('ai', data.reply, data.image ? `data:${data.mime};base64,${data.image}` : null, data.model); if (!speakText(data.reply, true) && document.getElementById('continuous-mode-toggle').checked) setTimeout(startRecording, 500); }
-                loadSessions(); 
-            } catch (err) { removeLoading(lid); appendMessage('ai', err.name === 'AbortError' ? `🛑 **生成已中止。**` : `❌ 執行失敗：\n\`\`\`text\n${err.message}\n\`\`\``); } 
+            try { const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(payload), signal: abortController.signal }); const data = await res.json(); removeLoading(lid); if (data.status === "error") throw new Error(data.error || "伺服器錯誤"); if (data.reply) { appendMessage('ai', data.reply, data.image ? `data:${data.mime};base64,${data.image}` : null, data.model); if (!speakText(data.reply, true) && document.getElementById('continuous-mode-toggle').checked) setTimeout(startRecording, 500); } loadSessions(); } 
+            catch (err) { removeLoading(lid); appendMessage('ai', err.name === 'AbortError' ? `🛑 **生成已中止。**` : `❌ 執行失敗：\n\`\`\`text\n${err.message}\n\`\`\``); } 
             finally { toggleSendButton(false); abortController = null; }
         }
 
-        async function handleFileUpload(e) {
-            const f = e.target.files[0]; if (!f) return; const r = new FileReader(), ext = f.name.split('.').pop().toLowerCase();
-            if (f.type.startsWith('image/')) { r.onload = (ev) => { currentImageData = ev.target.result; currentMimeType = f.type; document.getElementById('image-preview').src = currentImageData; document.getElementById('image-preview').classList.remove('hidden'); document.getElementById('doc-preview').classList.add('hidden'); document.getElementById('youtube-preview').classList.add('hidden'); document.getElementById('upload-preview-container').classList.remove('hidden'); }; r.readAsDataURL(f); } 
-            else if (f.type === 'application/pdf' || ext === 'pdf') { const lid = appendLoading(); try { await loadPdfJs(); r.onload = async (ev) => { try { const pdf = await pdfjsLib.getDocument(new Uint8Array(ev.target.result)).promise; let t = ""; for (let i=1; i<=pdf.numPages; i++) t += (await (await pdf.getPage(i)).getTextContent()).items.map(s => s.str).join(' ') + "\n"; setDocPayload(f.name, t); } catch (err) { alert("PDF 解析失敗"); } finally { removeLoading(lid); } }; r.readAsArrayBuffer(f); } catch (err) { removeLoading(lid); alert("載入 PDF 引擎失敗"); } } 
-            else if (ext === 'docx') { const lid = appendLoading(); try { await loadMammoth(); r.onload = async (ev) => { try { setDocPayload(f.name, (await mammoth.extractRawText({ arrayBuffer: ev.target.result })).value); } catch(err) { alert("Word 解析失敗"); } finally { removeLoading(lid); } }; r.readAsArrayBuffer(f); } catch (err) { removeLoading(lid); alert("載入 Word 引擎失敗"); } } 
-            else if (ext === 'xlsx' || ext === 'csv') { const lid = appendLoading(); try { await loadXlsx(); r.onload = (ev) => { try { const wb = XLSX.read(ev.target.result, { type: 'array' }); let t = ""; wb.SheetNames.forEach(n => { t += `\n--- 表單: ${n} ---\n`; let c = XLSX.utils.sheet_to_csv(wb.Sheets[n]); t += c.length > 500000 ? c.substring(0, 500000) + "\n...[截斷]..." : c; }); setDocPayload(f.name, t); } catch(err) { alert("Excel 解析失敗"); } finally { removeLoading(lid); } }; r.readAsArrayBuffer(f); } catch (err) { removeLoading(lid); alert("載入 Excel 引擎失敗"); } } 
-            else if (ext === 'pptx') { const lid = appendLoading(); try { await loadJszip(); r.onload = async (ev) => { try { const zip = await (new JSZip()).loadAsync(ev.target.result); let t = `【系統解析：簡報檔名 ${f.name}】\n\n`; const sFiles = Object.keys(zip.files).filter(n => n.match(new RegExp('^ppt/slides/slide\\\\d+\\\\.xml$'))).sort((a, b) => parseInt(a.match(new RegExp('(\\\\d+)\\\\.xml$'))[1]) - parseInt(b.match(new RegExp('(\\\\d+)\\\\.xml$'))[1])), nFiles = Object.keys(zip.files).filter(n => n.match(new RegExp('^ppt/notesSlides/notesSlide\\\\d+\\\\.xml$'))), parser = new DOMParser(); for (const p of sFiles) { const sn = p.match(new RegExp('(\\\\d+)\\\\.xml$'))[1]; t += `--- 第 ${sn} 頁 ---\n`; const sx = await zip.file(p).async("string"); if (sx) { const xmlDoc = parser.parseFromString(sx, "text/xml"); const textNodes = xmlDoc.getElementsByTagName("a:t"); let extText = ""; for (let i = 0; i < textNodes.length; i++) extText += textNodes[i].textContent + " "; t += `[投影片內容]:\n${extText.trim()}\n`; } const np = `ppt/notesSlides/notesSlide${sn}.xml`; if (nFiles.includes(np)) { const nx = await zip.file(np).async("string"); if (nx) { const xmlDoc = parser.parseFromString(nx, "text/xml"); const textNodes = xmlDoc.getElementsByTagName("a:t"); let extText = ""; for (let i = 0; i < textNodes.length; i++) extText += textNodes[i].textContent + " "; if (extText.trim()) t += `[講者備忘錄]:\n${extText.trim()}\n`; } } t += `\n`; } setDocPayload(f.name, t); } catch (err) { alert("PPTX 解析失敗"); } finally { removeLoading(lid); } }; r.readAsArrayBuffer(f); } catch (err) { removeLoading(lid); alert("載入 ZIP 引擎失敗"); } } 
-            else { r.onload = (ev) => setDocPayload(f.name, ev.target.result); r.readAsText(f); }
-        }
-        function setDocPayload(n, t) { currentDocumentName = n; currentDocumentText = t; document.getElementById('doc-filename').innerText = n; document.getElementById('doc-preview').classList.remove('hidden'); document.getElementById('image-preview').classList.add('hidden'); document.getElementById('youtube-preview').classList.add('hidden'); document.getElementById('upload-preview-container').classList.remove('hidden'); }
-        function clearUpload() { currentImageData = currentDocumentText = currentDocumentName = currentYouTubeId = null; document.getElementById('upload-preview-container').classList.add('hidden'); document.getElementById('file-upload').value = ''; }
-
-        // ✨ UI：注入編輯 (Edit) 與回收刪除 (Soft-delete) 按鈕的邏輯
         function appendMessage(role, text, imageSrc = null, model = null) {
             const isAI = role === 'ai', w = document.createElement('div'); w.className = `flex gap-3 sm:gap-4 max-w-4xl mx-auto w-full group ${!isAI ? 'flex-row-reverse' : ''}`;
             let b = `<div class="flex-1 ${!isAI ? 'text-right' : ''} space-y-2 max-w-[90%] sm:max-w-[85%] relative min-w-0">`;
-            
             if (model && isAI) b += `<div class="text-[10px] text-gray-500 mb-1 ml-1 select-none font-mono">Powered by ${model}</div>`;
             if (imageSrc) b += `<img src="${imageSrc}" class="rounded-xl border border-[#333] mb-2 max-w-full">`;
             if (text) b += `<div class="prose prose-invert text-gray-200 bg-[#1e1f22] p-4 sm:p-5 rounded-2xl rounded-tl-none shadow-sm text-base sm:text-lg leading-relaxed text-left">${isAI ? marked.parse(text) : text.replace(new RegExp('\\n', 'g'), '<br>')}</div>`;
-            
-            // 動態功能按鈕區
             b += `<div class="flex items-center gap-2 mt-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity ${!isAI ? 'justify-end' : ''}">`;
-            if (isAI && text) {
-                b += `<button class="copy-btn p-1.5 text-gray-400 hover:text-white hover:bg-[#333] rounded-md" title="複製"><span class="material-symbols-rounded text-[16px] sm:text-[18px]">content_copy</span></button>`;
-                b += `<button class="speak-btn p-1.5 text-gray-400 hover:text-green-400 hover:bg-[#333] rounded-md" title="朗讀此訊息"><span class="material-symbols-rounded text-[16px] sm:text-[18px]">volume_up</span></button>`;
-            } 
-            if (!isAI && text) {
-                b += `<button class="edit-btn p-1.5 text-gray-400 hover:text-blue-400 hover:bg-[#333] rounded-md transition-colors" title="編輯並重新生成"><span class="material-symbols-rounded text-[16px] sm:text-[18px]">edit</span></button>`;
-            }
-            if (text || imageSrc) {
-                b += `<button class="delete-btn p-1.5 text-gray-400 hover:text-red-400 hover:bg-[#333] rounded-md transition-colors" title="刪除此訊息"><span class="material-symbols-rounded text-[16px] sm:text-[18px]">delete</span></button>`;
-            }
+            if (isAI && text) { b += `<button class="copy-btn p-1.5 text-gray-400 hover:text-white hover:bg-[#333] rounded-md" title="複製"><span class="material-symbols-rounded text-[16px] sm:text-[18px]">content_copy</span></button>`; b += `<button class="speak-btn p-1.5 text-gray-400 hover:text-green-400 hover:bg-[#333] rounded-md" title="朗讀此訊息"><span class="material-symbols-rounded text-[16px] sm:text-[18px]">volume_up</span></button>`; } 
+            if (!isAI && text) { b += `<button class="edit-btn p-1.5 text-gray-400 hover:text-blue-400 hover:bg-[#333] rounded-md transition-colors" title="編輯並重新生成"><span class="material-symbols-rounded text-[16px] sm:text-[18px]">edit</span></button>`; }
+            if (text || imageSrc) { b += `<button class="delete-btn p-1.5 text-gray-400 hover:text-red-400 hover:bg-[#333] rounded-md transition-colors" title="刪除此訊息"><span class="material-symbols-rounded text-[16px] sm:text-[18px]">delete</span></button>`; }
             b += `</div></div>`; 
-            
             w.innerHTML = `<div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center shrink-0 shadow-lg ${isAI ? 'bg-blue-600' : 'bg-gray-700'}"><span class="material-symbols-rounded text-white text-[18px] sm:text-xl">${isAI ? 'smart_toy' : 'person'}</span></div>` + b;
             chatContainer.appendChild(w);
 
-            // Artifacts 渲染按鈕
             if (isAI) { w.querySelectorAll('pre code').forEach(c => { if (c.className.includes('language-html') || c.className.includes('language-jsx') || c.className.includes('language-javascript')) { let btn = document.createElement('button'); btn.className = "absolute top-2 sm:top-3 right-2 sm:right-3 bg-blue-600 hover:bg-blue-500 text-white text-[10px] sm:text-xs px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg flex items-center gap-1 shadow-lg"; btn.innerHTML = '<span class="material-symbols-rounded text-[12px] sm:text-sm">play_circle</span> 預覽'; btn.onclick = () => openPreview(c.innerText); c.parentElement.appendChild(btn); } }); }
+            if (isAI && text) { w.querySelector('.copy-btn').onclick = () => navigator.clipboard.writeText(text).then(() => { let ic = w.querySelector('.copy-btn .material-symbols-rounded'); ic.innerText = 'check'; ic.classList.add('text-green-400'); setTimeout(() => { ic.innerText = 'content_copy'; ic.classList.remove('text-green-400'); }, 2000); }); w.querySelector('.speak-btn').onclick = () => speakText(text, false); } 
             
-            if (isAI && text) { 
-                w.querySelector('.copy-btn').onclick = () => navigator.clipboard.writeText(text).then(() => { let ic = w.querySelector('.copy-btn .material-symbols-rounded'); ic.innerText = 'check'; ic.classList.add('text-green-400'); setTimeout(() => { ic.innerText = 'content_copy'; ic.classList.remove('text-green-400'); }, 2000); }); 
-                w.querySelector('.speak-btn').onclick = () => speakText(text, false); 
-            } 
-            
-            // 綁定「編輯/時光機」事件
             if (!isAI && text) {
                 w.querySelector('.edit-btn').onclick = () => {
-                    const contentDiv = w.querySelector('.prose');
-                    const actionsDiv = w.querySelector('.flex.items-center.gap-2.mt-2');
-                    contentDiv.classList.add('hidden');
-                    actionsDiv.classList.add('hidden');
-                    
-                    const editContainer = document.createElement('div');
-                    editContainer.className = "w-full mt-2 flex flex-col gap-2 text-left";
-                    
+                    const contentDiv = w.querySelector('.prose'); const actionsDiv = w.querySelector('.flex.items-center.gap-2.mt-2'); contentDiv.classList.add('hidden'); actionsDiv.classList.add('hidden');
+                    const editContainer = document.createElement('div'); editContainer.className = "w-full mt-2 flex flex-col gap-2 text-left";
                     let cleanEditText = text.replace(new RegExp('^【使用角色：.*?】\\n'), '').replace(new RegExp('^📎 \\[(?:文件|檔案): .*?\\]\\n'), '').replace(new RegExp('^📺 \\[YouTube 影片\\]\\n'), '');
-
-                    editContainer.innerHTML = `
-                        <textarea class="w-full bg-[#2a2b2f] text-white p-3 rounded-xl border border-blue-500 outline-none resize-y min-h-[100px] text-base leading-relaxed">${cleanEditText}</textarea>
-                        <div class="flex justify-end gap-2">
-                            <button class="cancel-edit-btn px-3 py-1.5 rounded-lg text-sm font-medium text-gray-400 hover:bg-[#333] transition-colors">取消</button>
-                            <button class="save-edit-btn px-3 py-1.5 rounded-lg text-sm font-medium bg-blue-600 hover:bg-blue-500 text-white flex items-center gap-1 transition-colors shadow-md"><span class="material-symbols-rounded text-[16px]">send</span> 重新發送</button>
-                        </div>
-                    `;
+                    editContainer.innerHTML = `<textarea class="w-full bg-[#2a2b2f] text-white p-3 rounded-xl border border-blue-500 outline-none resize-y min-h-[100px] text-base leading-relaxed">${cleanEditText}</textarea><div class="flex justify-end gap-2"><button class="cancel-edit-btn px-3 py-1.5 rounded-lg text-sm font-medium text-gray-400 hover:bg-[#333] transition-colors">取消</button><button class="save-edit-btn px-3 py-1.5 rounded-lg text-sm font-medium bg-blue-600 hover:bg-blue-500 text-white flex items-center gap-1 transition-colors shadow-md"><span class="material-symbols-rounded text-[16px]">send</span> 重新發送</button></div>`;
                     w.querySelector('.flex-1').appendChild(editContainer);
-                    
-                    editContainer.querySelector('.cancel-edit-btn').onclick = () => {
-                        editContainer.remove();
-                        contentDiv.classList.remove('hidden');
-                        actionsDiv.classList.remove('hidden');
-                    };
-                    
-                    editContainer.querySelector('.save-edit-btn').onclick = () => {
-                        const newText = editContainer.querySelector('textarea').value.trim();
-                        if (!newText) return;
-                        
-                        let curr = w;
-                        while(curr) {
-                            let next = curr.nextElementSibling;
-                            curr.remove();
-                            curr = next;
-                        }
-                        sendEditAndRegenerate(text, newText); 
-                    };
+                    editContainer.querySelector('.cancel-edit-btn').onclick = () => { editContainer.remove(); contentDiv.classList.remove('hidden'); actionsDiv.classList.remove('hidden'); };
+                    editContainer.querySelector('.save-edit-btn').onclick = () => { const newText = editContainer.querySelector('textarea').value.trim(); if (!newText) return; let curr = w; while(curr) { let next = curr.nextElementSibling; curr.remove(); curr = next; } sendEditAndRegenerate(text, newText); };
                 };
             }
-
-            // 綁定「刪除/回收」事件
-            if (w.querySelector('.delete-btn')) {
-                w.querySelector('.delete-btn').onclick = () => {
-                    if (confirm("確定要刪除這則訊息嗎？\n(刪除後系統將徹底忘記這段對話)")) {
-                        w.remove();
-                        fetch(GAS_URL, {
-                            method: 'POST',
-                            body: JSON.stringify({
-                                mode: 'system',
-                                action: 'delete_message',
-                                session_id: currentSessionId,
-                                target_text: text,
-                                target_role: role
-                            })
-                        });
-                    }
-                };
-            }
-
+            if (w.querySelector('.delete-btn')) { w.querySelector('.delete-btn').onclick = () => { if (confirm("確定要刪除這則訊息嗎？\n(刪除後系統將徹底忘記這段對話)")) { w.remove(); fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ mode: 'system', action: 'delete_message', session_id: currentSessionId, target_text: text, target_role: role }) }); } }; }
             scrollToBottom();
         }
 
@@ -525,25 +478,8 @@
         function startNewSession() { currentSessionId = generateUUID(); chatContainer.innerHTML = ''; appendMessage('ai', "您好！已為您開啟新的對話。\n您可以透過下方的「💎 角色選單」切換專長，或使用「🧠 模型選單」自由升降級我的智商大腦！"); if (window.innerWidth < 768) toggleSidebar(); loadSessions(); }
         
         async function switchSession(id, title) { if (id === currentSessionId && chatContainer.children.length > 1) return; currentSessionId = id; document.getElementById('mobile-title').innerText = title; chatContainer.innerHTML = ''; const lid = appendLoading(); if (window.innerWidth < 768) toggleSidebar(); try { const d = await (await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ mode: 'system', action: 'load_session', session_id: id }) })).json(); removeLoading(lid); if (Array.isArray(d.logs)) d.logs.forEach(l => appendMessage(l.role === 'ai' ? 'ai' : 'user', l.text)); loadSessions(); } catch (e) {} }
-        
-        // 載入 Gems 列表
         async function loadGems() { try { const d = await (await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ mode: 'system', action: 'get_gems' }) })).json(); if (d && d.gems) { currentGemsList = d.gems; const s = document.getElementById('gem-selector'); s.innerHTML = '<option value="">🤖 全能助理</option>'; currentGemsList.forEach((g, i) => s.innerHTML += `<option value="${i}">💎 ${g.name}</option>`); } } catch (e) {} }
-        
-        // ✨ 新增：拉取全域模型清單
-        async function loadModels() { 
-            try { 
-                const d = await (await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ mode: 'system', action: 'get_models' }) })).json(); 
-                const s = document.getElementById('model-selector'); 
-                s.innerHTML = '<option value="">🧠 預設模型 (自動)</option>'; 
-                if (d && d.models && d.models.length > 0) { 
-                    d.models.forEach(m => s.innerHTML += `<option value="${m.id}">${m.name}</option>`); 
-                } else {
-                    s.innerHTML += `<option value="gemini-2.5-flash">⚡ 閃電 (2.5 Flash)</option>`;
-                    s.innerHTML += `<option value="gemini-2.5-pro">🧠 專家 (2.5 Pro)</option>`;
-                    s.innerHTML += `<option value="gemini-2.0-pro-exp-02-05">💡 實驗 (2.0 Pro Exp)</option>`;
-                }
-            } catch (e) {} 
-        }
+        async function loadModels() { try { const d = await (await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ mode: 'system', action: 'get_models' }) })).json(); const s = document.getElementById('model-selector'); s.innerHTML = '<option value="">🧠 預設模型 (自動)</option>'; if (d && d.models && d.models.length > 0) { d.models.forEach(m => s.innerHTML += `<option value="${m.id}">${m.name}</option>`); } else { s.innerHTML += `<option value="gemini-2.5-flash">⚡ 閃電 (2.5 Flash)</option>`; s.innerHTML += `<option value="gemini-2.5-pro">🧠 專家 (2.5 Pro)</option>`; s.innerHTML += `<option value="gemini-2.0-pro-exp-02-05">💡 實驗 (2.0 Pro Exp)</option>`; } } catch (e) {} }
 
         async function loadSessions() { try { const d = await (await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ mode: 'system', action: 'get_session_list' }) })).json(); const l = document.getElementById('session-list'); l.innerHTML = ''; if (Array.isArray(d.sessions)) d.sessions.forEach(s => { const act = s.id === currentSessionId, pin = s.pinned, i = document.createElement('div'); i.className = `group flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all ${act ? 'active-session' : 'text-gray-400 hover:bg-[#2a2b2f] hover:text-white'}`; i.innerHTML = `<div class="flex items-center gap-3 truncate flex-1 min-w-0"><span class="material-symbols-rounded text-lg shrink-0 ${pin ? 'pinned-icon' : ''}">${pin ? 'push_pin' : (act ? 'chat_bubble' : 'chat')}</span><span class="truncate text-sm font-medium tracking-wide">${s.title}</span></div><div class="flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 shrink-0 ml-2 transition-opacity"><button class="p-1 pin-btn ${pin ? 'text-blue-500' : ''} hover:bg-[#333] rounded-md transition-colors"><span class="material-symbols-rounded text-[16px]">push_pin</span></button><button class="p-1 edit-btn hover:text-blue-400 hover:bg-[#333] rounded-md transition-colors"><span class="material-symbols-rounded text-[16px]">edit</span></button><button class="p-1 del-btn hover:text-red-400 hover:bg-[#333] rounded-md transition-colors"><span class="material-symbols-rounded text-[16px]">delete</span></button></div>`; i.onclick = () => switchSession(s.id, s.title); i.querySelector('.pin-btn').onclick = (e) => { e.stopPropagation(); fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ mode: 'system', action: 'pin_session', session_id: s.id, is_pinned: !pin }) }).then(loadSessions); }; i.querySelector('.edit-btn').onclick = (e) => { e.stopPropagation(); const n = prompt("重命名：", s.title); if (n && n.trim()) fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ mode: 'system', action: 'rename_session', session_id: s.id, new_title: n }) }).then(loadSessions); }; i.querySelector('.del-btn').onclick = (e) => { e.stopPropagation(); if (confirm("確定要刪除嗎？")) fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ mode: 'system', action: 'delete_session', session_id: s.id }) }).then(() => s.id === currentSessionId ? startNewSession() : loadSessions()); }; l.appendChild(i); }); } catch (e) {} }
 
@@ -565,12 +501,7 @@
         function closePreview() { document.getElementById('preview-modal').classList.add('hidden'); document.getElementById('preview-modal').classList.remove('flex'); document.getElementById('preview-iframe').srcdoc = ''; }
         function refreshPreview() { if (currentRenderCode) document.getElementById('preview-iframe').srcdoc = currentRenderCode; }
 
-        // ✨ 啟動時同時載入 Session、Gems 與 Models
-        window.onload = () => { 
-            loadSessions(); 
-            loadGems(); 
-            loadModels(); 
-        };
+        window.onload = () => { loadSessions(); loadGems(); loadModels(); };
     </script>
 </body>
 </html>
