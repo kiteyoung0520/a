@@ -98,7 +98,7 @@
                 </a>
             </div>
         </div>
-        <div class="p-4 border-t border-[#333] text-xs text-gray-500 text-center font-mono shrink-0">v86.29 Safe Parse Edition</div>
+        <div class="p-4 border-t border-[#333] text-xs text-gray-500 text-center font-mono shrink-0">v86.33 Final Fetch Edition</div>
     </aside>
 
     <!-- Main Chat Area -->
@@ -220,10 +220,10 @@
     <div id="sidebar-overlay" class="fixed inset-0 bg-black/50 z-20 hidden md:hidden" onclick="toggleSidebar()"></div>
 
     <script>
-        // ⚠️ 請確認此處替換為您最新部署的 Apps Script Web App URL
+        // ⚠️ 【非常重要】請將下方網址替換為您「剛剛最新部署」的 Google Apps Script Web App URL！
+        // 如果這個網址錯誤，或者後端未設定為「所有人 (Anyone)」，將會導致 TypeError: Failed to fetch 錯誤。
         const GAS_URL = "https://script.google.com/macros/s/AKfycbwsng4RBCTX67my46U4fv7BhDYT0CIZt95dL7DNCFJTGUJLZFd_854vRGeUsQ1_BjG9/exec";
 
-        // ✨ 修正 1：改用傳統 function 寫法，避免 GAS 內建檢查器報錯 (Missing : after property ID)
         marked.use({
             renderer: {
                 link: function(hrefOrToken, title, text) {
@@ -314,6 +314,26 @@
         });
         userInput.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { if (window.innerWidth < 768) return; e.preventDefault(); isWaiting ? stopGeneration() : sendMessage(); } });
 
+        // 💡 修改: 移除自訂 Headers，讓瀏覽器自然發送以徹底避開 CORS 阻擋
+        async function fetchFromGAS(payload) {
+            try {
+                const res = await fetch(GAS_URL, { 
+                    method: 'POST', 
+                    body: JSON.stringify(payload), 
+                    // 移除 headers，這是避免 CORS 問題的最穩定作法
+                    signal: typeof abortController !== 'undefined' && abortController ? abortController.signal : undefined 
+                });
+                
+                if (!res.ok) {
+                    throw new Error(`伺服器連線失敗 (HTTP ${res.status})，請確認 GAS_URL 網址正確並已發布為「所有人(Anyone)」皆可存取。`);
+                }
+                return await res.json();
+            } catch (err) {
+                console.error("Fetch Error:", err);
+                throw err; // 拋出錯誤讓上層捕捉
+            }
+        }
+
         async function sendEditAndRegenerate(oldText, newText) {
             if (isWaiting) return;
             if (window.speechSynthesis) window.speechSynthesis.cancel(); 
@@ -329,7 +349,6 @@
 
             appendMessage('user', dMsg, null);
             
-            // ✨ 修正 2：補回 selected_model 參數，讓全域模型選單正常運作
             const payload = { 
                 mode: 'edit_and_regenerate',
                 old_text: oldText,
@@ -348,12 +367,15 @@
             toggleSendButton(true); const lid = appendLoading(); abortController = new AbortController(); 
 
             try {
-                const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(payload), signal: abortController.signal });
-                const data = await res.json(); removeLoading(lid);
+                const data = await fetchFromGAS(payload);
+                removeLoading(lid);
                 if (data.status === "error") throw new Error(data.error || "伺服器錯誤");
                 if (data.reply) { appendMessage('ai', data.reply, data.image ? `data:${data.mime};base64,${data.image}` : null, data.model); if (!speakText(data.reply, true) && document.getElementById('continuous-mode-toggle').checked) setTimeout(startRecording, 500); }
                 loadSessions(); 
-            } catch (err) { removeLoading(lid); appendMessage('ai', err.name === 'AbortError' ? `🛑 **生成已中止。**` : `❌ 執行失敗：\n\`\`\`text\n${err.message}\n\`\`\``); } 
+            } catch (err) { 
+                removeLoading(lid); 
+                appendMessage('ai', err.name === 'AbortError' ? `🛑 **生成已中止。**` : `❌ 執行失敗：\n\`\`\`text\n${err.message}\n\`\`\`\n💡 提示：如果一直出現 Failed to fetch，請檢查您的 GAS_URL 是否正確，且後端部署時必須設定「誰可以存取：所有人 (Anyone)」。`); 
+            } 
             finally { toggleSendButton(false); abortController = null; }
         }
 
@@ -383,7 +405,6 @@
 
             userInput.value = ''; userInput.style.height = 'auto'; finalTranscript = ''; 
             
-            // ✨ 修正 3：補回 selected_model 參數，讓全域模型選單正常運作
             const payload = { 
                 message: pText, 
                 session_id: currentSessionId, 
@@ -401,12 +422,15 @@
             clearUpload(); toggleSendButton(true); const lid = appendLoading(); abortController = new AbortController(); 
 
             try {
-                const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(payload), signal: abortController.signal });
-                const data = await res.json(); removeLoading(lid);
+                const data = await fetchFromGAS(payload);
+                removeLoading(lid);
                 if (data.status === "error") throw new Error(data.error || "伺服器錯誤");
                 if (data.reply) { appendMessage('ai', data.reply, data.image ? `data:${data.mime};base64,${data.image}` : null, data.model); if (!speakText(data.reply, true) && document.getElementById('continuous-mode-toggle').checked) setTimeout(startRecording, 500); }
                 loadSessions(); 
-            } catch (err) { removeLoading(lid); appendMessage('ai', err.name === 'AbortError' ? `🛑 **生成已中止。**` : `❌ 執行失敗：\n\`\`\`text\n${err.message}\n\`\`\``); } 
+            } catch (err) { 
+                removeLoading(lid); 
+                appendMessage('ai', err.name === 'AbortError' ? `🛑 **生成已中止。**` : `❌ 執行失敗：\n\`\`\`text\n${err.message}\n\`\`\`\n💡 提示：如果一直出現 Failed to fetch，請檢查您的 GAS_URL 是否正確，且後端部署時必須設定「誰可以存取：所有人 (Anyone)」。`); 
+            } 
             finally { toggleSendButton(false); abortController = null; }
         }
 
@@ -499,15 +523,12 @@
                 w.querySelector('.delete-btn').onclick = () => {
                     if (confirm("確定要刪除這則訊息嗎？\n(刪除後系統將徹底忘記這段對話)")) {
                         w.remove();
-                        fetch(GAS_URL, {
-                            method: 'POST',
-                            body: JSON.stringify({
-                                mode: 'system',
-                                action: 'delete_message',
-                                session_id: currentSessionId,
-                                target_text: text,
-                                target_role: role
-                            })
+                        fetchFromGAS({
+                            mode: 'system',
+                            action: 'delete_message',
+                            session_id: currentSessionId,
+                            target_text: text,
+                            target_role: role
                         });
                     }
                 };
@@ -523,13 +544,25 @@
         function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); document.getElementById('sidebar-overlay').classList.toggle('hidden'); }
         function startNewSession() { currentSessionId = generateUUID(); chatContainer.innerHTML = ''; appendMessage('ai', "您好！已為您開啟新的對話。\n您可以透過下方的「💎 角色選單」切換專長，或使用「🧠 模型選單」自由升降級我的智商大腦！"); if (window.innerWidth < 768) toggleSidebar(); loadSessions(); }
         
-        async function switchSession(id, title) { if (id === currentSessionId && chatContainer.children.length > 1) return; currentSessionId = id; document.getElementById('mobile-title').innerText = title; chatContainer.innerHTML = ''; const lid = appendLoading(); if (window.innerWidth < 768) toggleSidebar(); try { const d = await (await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ mode: 'system', action: 'load_session', session_id: id }) })).json(); removeLoading(lid); if (Array.isArray(d.logs)) d.logs.forEach(l => appendMessage(l.role === 'ai' ? 'ai' : 'user', l.text)); loadSessions(); } catch (e) {} }
+        async function switchSession(id, title) { if (id === currentSessionId && chatContainer.children.length > 1) return; currentSessionId = id; document.getElementById('mobile-title').innerText = title; chatContainer.innerHTML = ''; const lid = appendLoading(); if (window.innerWidth < 768) toggleSidebar(); try { const d = await fetchFromGAS({ mode: 'system', action: 'load_session', session_id: id }); removeLoading(lid); if (Array.isArray(d.logs)) d.logs.forEach(l => appendMessage(l.role === 'ai' ? 'ai' : 'user', l.text)); loadSessions(); } catch (e) { removeLoading(lid); appendMessage('ai', '無法載入對話紀錄，請確認連線。'); } }
         
-        async function loadGems() { try { const d = await (await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ mode: 'system', action: 'get_gems' }) })).json(); if (d && d.gems) { currentGemsList = d.gems; const s = document.getElementById('gem-selector'); s.innerHTML = '<option value="">🤖 全能助理</option>'; currentGemsList.forEach((g, i) => s.innerHTML += `<option value="${i}">💎 ${g.name}</option>`); } } catch (e) {} }
+        async function loadGems() { 
+            try { 
+                const d = await fetchFromGAS({ mode: 'system', action: 'get_gems' }); 
+                if (d && d.gems) { 
+                    currentGemsList = d.gems; 
+                    const s = document.getElementById('gem-selector'); 
+                    s.innerHTML = '<option value="">🤖 全能助理</option>'; 
+                    currentGemsList.forEach((g, i) => s.innerHTML += `<option value="${i}">💎 ${g.name}</option>`); 
+                } 
+            } catch (e) { 
+                console.error("Load Gems error:", e); 
+            } 
+        }
         
         async function loadModels() { 
             try { 
-                const d = await (await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ mode: 'system', action: 'get_models' }) })).json(); 
+                const d = await fetchFromGAS({ mode: 'system', action: 'get_models' }); 
                 const s = document.getElementById('model-selector'); 
                 s.innerHTML = '<option value="">🧠 預設模型 (自動)</option>'; 
                 if (d && d.models && d.models.length > 0) { 
@@ -539,10 +572,37 @@
                     s.innerHTML += `<option value="gemini-2.5-pro">🧠 專家 (2.5 Pro)</option>`;
                     s.innerHTML += `<option value="gemini-2.0-pro-exp-02-05">💡 實驗 (2.0 Pro Exp)</option>`;
                 }
-            } catch (e) {} 
+            } catch (e) { 
+                console.error("Load Models error:", e); 
+            } 
         }
 
-        async function loadSessions() { try { const d = await (await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ mode: 'system', action: 'get_session_list' }) })).json(); const l = document.getElementById('session-list'); l.innerHTML = ''; if (Array.isArray(d.sessions)) d.sessions.forEach(s => { const act = s.id === currentSessionId, pin = s.pinned, i = document.createElement('div'); i.className = `group flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all ${act ? 'active-session' : 'text-gray-400 hover:bg-[#2a2b2f] hover:text-white'}`; i.innerHTML = `<div class="flex items-center gap-3 truncate flex-1 min-w-0"><span class="material-symbols-rounded text-lg shrink-0 ${pin ? 'pinned-icon' : ''}">${pin ? 'push_pin' : (act ? 'chat_bubble' : 'chat')}</span><span class="truncate text-sm font-medium tracking-wide">${s.title}</span></div><div class="flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 shrink-0 ml-2 transition-opacity"><button class="p-1 pin-btn ${pin ? 'text-blue-500' : ''} hover:bg-[#333] rounded-md transition-colors"><span class="material-symbols-rounded text-[16px]">push_pin</span></button><button class="p-1 edit-btn hover:text-blue-400 hover:bg-[#333] rounded-md transition-colors"><span class="material-symbols-rounded text-[16px]">edit</span></button><button class="p-1 del-btn hover:text-red-400 hover:bg-[#333] rounded-md transition-colors"><span class="material-symbols-rounded text-[16px]">delete</span></button></div>`; i.onclick = () => switchSession(s.id, s.title); i.querySelector('.pin-btn').onclick = (e) => { e.stopPropagation(); fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ mode: 'system', action: 'pin_session', session_id: s.id, is_pinned: !pin }) }).then(loadSessions); }; i.querySelector('.edit-btn').onclick = (e) => { e.stopPropagation(); const n = prompt("重命名：", s.title); if (n && n.trim()) fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ mode: 'system', action: 'rename_session', session_id: s.id, new_title: n }) }).then(loadSessions); }; i.querySelector('.del-btn').onclick = (e) => { e.stopPropagation(); if (confirm("確定要刪除嗎？")) fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ mode: 'system', action: 'delete_session', session_id: s.id }) }).then(() => s.id === currentSessionId ? startNewSession() : loadSessions()); }; l.appendChild(i); }); } catch (e) {} }
+        async function loadSessions() { 
+            try { 
+                const d = await fetchFromGAS({ mode: 'system', action: 'get_session_list' }); 
+                const l = document.getElementById('session-list'); l.innerHTML = ''; 
+                if (Array.isArray(d.sessions)) d.sessions.forEach(s => { 
+                    const act = s.id === currentSessionId, pin = s.pinned, i = document.createElement('div'); 
+                    i.className = `group flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all ${act ? 'active-session' : 'text-gray-400 hover:bg-[#2a2b2f] hover:text-white'}`; 
+                    i.innerHTML = `<div class="flex items-center gap-3 truncate flex-1 min-w-0"><span class="material-symbols-rounded text-lg shrink-0 ${pin ? 'pinned-icon' : ''}">${pin ? 'push_pin' : (act ? 'chat_bubble' : 'chat')}</span><span class="truncate text-sm font-medium tracking-wide">${s.title}</span></div><div class="flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 shrink-0 ml-2 transition-opacity"><button class="p-1 pin-btn ${pin ? 'text-blue-500' : ''} hover:bg-[#333] rounded-md transition-colors"><span class="material-symbols-rounded text-[16px]">push_pin</span></button><button class="p-1 edit-btn hover:text-blue-400 hover:bg-[#333] rounded-md transition-colors"><span class="material-symbols-rounded text-[16px]">edit</span></button><button class="p-1 del-btn hover:text-red-400 hover:bg-[#333] rounded-md transition-colors"><span class="material-symbols-rounded text-[16px]">delete</span></button></div>`; 
+                    i.onclick = () => switchSession(s.id, s.title); 
+                    i.querySelector('.pin-btn').onclick = (e) => { e.stopPropagation(); fetchFromGAS({ mode: 'system', action: 'pin_session', session_id: s.id, is_pinned: !pin }).then(loadSessions); }; 
+                    i.querySelector('.edit-btn').onclick = (e) => { e.stopPropagation(); const n = prompt("重命名：", s.title); if (n && n.trim()) fetchFromGAS({ mode: 'system', action: 'rename_session', session_id: s.id, new_title: n }).then(loadSessions); }; 
+                    i.querySelector('.del-btn').onclick = (e) => { e.stopPropagation(); if (confirm("確定要刪除嗎？")) fetchFromGAS({ mode: 'system', action: 'delete_session', session_id: s.id }).then(() => s.id === currentSessionId ? startNewSession() : loadSessions()); }; 
+                    l.appendChild(i); 
+                }); 
+            } catch (e) { 
+                console.error("Load Sessions error:", e); 
+                const l = document.getElementById('session-list'); 
+                l.innerHTML = `<div class="p-3 text-xs text-red-400 bg-red-900/20 rounded-xl border border-red-800/50 mt-2 leading-relaxed">
+                                ⚠️ <b>與後端連線失敗！</b><br><br>
+                                這通常是因為：<br>
+                                1. 您忘記將網頁第 218 行的 <code class="bg-red-900/50 px-1 rounded">GAS_URL</code> 更新為最新的部署網址。<br>
+                                2. 後端部署時，「誰可以存取 (Who has access)」沒有設定為<b>「所有人 (Anyone)」</b>。<br>
+                                請回 Apps Script 重新部署，並確認存取權限為「所有人」。
+                               </div>`;
+            } 
+        }
 
         function openPreview(code) {
             let rc = code;
