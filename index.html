@@ -98,7 +98,7 @@
                 </a>
             </div>
         </div>
-        <div class="p-4 border-t border-[#333] text-xs text-gray-500 text-center font-mono shrink-0">v86.27 Ultimate Edition</div>
+        <div class="p-4 border-t border-[#333] text-xs text-gray-500 text-center font-mono shrink-0">v86.29 Safe Parse Edition</div>
     </aside>
 
     <!-- Main Chat Area -->
@@ -221,12 +221,15 @@
 
     <script>
         // ⚠️ 請確認此處替換為您最新部署的 Apps Script Web App URL
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbwsng4RBCTX67my46U4fv7BhDYT0CIZt95dL7DNCFJTGUJLZFd_854vRGeUsQ1_BjG9/exec";
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbxdaE6GhEzJ8CMr-n5hyvHB0UamZllt-fFcul-blcbEdnPpm4hRxp3idYQrx-H0q_1K/exec";
 
+        // ✨ 修正 1：改用傳統 function 寫法，避免 GAS 內建檢查器報錯 (Missing : after property ID)
         marked.use({
             renderer: {
-                link(hrefOrToken, title, text) {
-                    let h = hrefOrToken.href || hrefOrToken, t = hrefOrToken.title || title, txt = hrefOrToken.text || text;
+                link: function(hrefOrToken, title, text) {
+                    let h = hrefOrToken.href || hrefOrToken;
+                    let t = hrefOrToken.title || title;
+                    let txt = hrefOrToken.text || text;
                     return `<a href="${h}" ${t ? `title="${t}"` : ''} target="_blank" rel="noopener noreferrer">${txt}</a>`;
                 }
             }
@@ -311,7 +314,6 @@
         });
         userInput.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { if (window.innerWidth < 768) return; e.preventDefault(); isWaiting ? stopGeneration() : sendMessage(); } });
 
-        // ✨ 修改歷史並重新生成 (時光機功能)
         async function sendEditAndRegenerate(oldText, newText) {
             if (isWaiting) return;
             if (window.speechSynthesis) window.speechSynthesis.cancel(); 
@@ -327,6 +329,7 @@
 
             appendMessage('user', dMsg, null);
             
+            // ✨ 修正 2：補回 selected_model 參數，讓全域模型選單正常運作
             const payload = { 
                 mode: 'edit_and_regenerate',
                 old_text: oldText,
@@ -339,7 +342,7 @@
                 youtube_id: null, 
                 gem_prompt: agp, 
                 gem_model: agm,
-                selected_model: ms.value // ✨ 傳送全域模型參數
+                selected_model: ms.value 
             };
             
             toggleSendButton(true); const lid = appendLoading(); abortController = new AbortController(); 
@@ -380,6 +383,7 @@
 
             userInput.value = ''; userInput.style.height = 'auto'; finalTranscript = ''; 
             
+            // ✨ 修正 3：補回 selected_model 參數，讓全域模型選單正常運作
             const payload = { 
                 message: pText, 
                 session_id: currentSessionId, 
@@ -391,7 +395,7 @@
                 youtube_id: currentYouTubeId, 
                 gem_prompt: agp, 
                 gem_model: agm,
-                selected_model: ms.value // ✨ 傳送全域模型參數
+                selected_model: ms.value 
             };
             
             clearUpload(); toggleSendButton(true); const lid = appendLoading(); abortController = new AbortController(); 
@@ -418,7 +422,6 @@
         function setDocPayload(n, t) { currentDocumentName = n; currentDocumentText = t; document.getElementById('doc-filename').innerText = n; document.getElementById('doc-preview').classList.remove('hidden'); document.getElementById('image-preview').classList.add('hidden'); document.getElementById('youtube-preview').classList.add('hidden'); document.getElementById('upload-preview-container').classList.remove('hidden'); }
         function clearUpload() { currentImageData = currentDocumentText = currentDocumentName = currentYouTubeId = null; document.getElementById('upload-preview-container').classList.add('hidden'); document.getElementById('file-upload').value = ''; }
 
-        // ✨ UI：注入編輯 (Edit) 與回收刪除 (Soft-delete) 按鈕的邏輯
         function appendMessage(role, text, imageSrc = null, model = null) {
             const isAI = role === 'ai', w = document.createElement('div'); w.className = `flex gap-3 sm:gap-4 max-w-4xl mx-auto w-full group ${!isAI ? 'flex-row-reverse' : ''}`;
             let b = `<div class="flex-1 ${!isAI ? 'text-right' : ''} space-y-2 max-w-[90%] sm:max-w-[85%] relative min-w-0">`;
@@ -427,7 +430,6 @@
             if (imageSrc) b += `<img src="${imageSrc}" class="rounded-xl border border-[#333] mb-2 max-w-full">`;
             if (text) b += `<div class="prose prose-invert text-gray-200 bg-[#1e1f22] p-4 sm:p-5 rounded-2xl rounded-tl-none shadow-sm text-base sm:text-lg leading-relaxed text-left">${isAI ? marked.parse(text) : text.replace(new RegExp('\\n', 'g'), '<br>')}</div>`;
             
-            // 動態功能按鈕區
             b += `<div class="flex items-center gap-2 mt-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity ${!isAI ? 'justify-end' : ''}">`;
             if (isAI && text) {
                 b += `<button class="copy-btn p-1.5 text-gray-400 hover:text-white hover:bg-[#333] rounded-md" title="複製"><span class="material-symbols-rounded text-[16px] sm:text-[18px]">content_copy</span></button>`;
@@ -444,7 +446,6 @@
             w.innerHTML = `<div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center shrink-0 shadow-lg ${isAI ? 'bg-blue-600' : 'bg-gray-700'}"><span class="material-symbols-rounded text-white text-[18px] sm:text-xl">${isAI ? 'smart_toy' : 'person'}</span></div>` + b;
             chatContainer.appendChild(w);
 
-            // Artifacts 渲染按鈕
             if (isAI) { w.querySelectorAll('pre code').forEach(c => { if (c.className.includes('language-html') || c.className.includes('language-jsx') || c.className.includes('language-javascript')) { let btn = document.createElement('button'); btn.className = "absolute top-2 sm:top-3 right-2 sm:right-3 bg-blue-600 hover:bg-blue-500 text-white text-[10px] sm:text-xs px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg flex items-center gap-1 shadow-lg"; btn.innerHTML = '<span class="material-symbols-rounded text-[12px] sm:text-sm">play_circle</span> 預覽'; btn.onclick = () => openPreview(c.innerText); c.parentElement.appendChild(btn); } }); }
             
             if (isAI && text) { 
@@ -452,7 +453,6 @@
                 w.querySelector('.speak-btn').onclick = () => speakText(text, false); 
             } 
             
-            // 綁定「編輯/時光機」事件
             if (!isAI && text) {
                 w.querySelector('.edit-btn').onclick = () => {
                     const contentDiv = w.querySelector('.prose');
@@ -495,7 +495,6 @@
                 };
             }
 
-            // 綁定「刪除/回收」事件
             if (w.querySelector('.delete-btn')) {
                 w.querySelector('.delete-btn').onclick = () => {
                     if (confirm("確定要刪除這則訊息嗎？\n(刪除後系統將徹底忘記這段對話)")) {
@@ -526,10 +525,8 @@
         
         async function switchSession(id, title) { if (id === currentSessionId && chatContainer.children.length > 1) return; currentSessionId = id; document.getElementById('mobile-title').innerText = title; chatContainer.innerHTML = ''; const lid = appendLoading(); if (window.innerWidth < 768) toggleSidebar(); try { const d = await (await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ mode: 'system', action: 'load_session', session_id: id }) })).json(); removeLoading(lid); if (Array.isArray(d.logs)) d.logs.forEach(l => appendMessage(l.role === 'ai' ? 'ai' : 'user', l.text)); loadSessions(); } catch (e) {} }
         
-        // 載入 Gems 列表
         async function loadGems() { try { const d = await (await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ mode: 'system', action: 'get_gems' }) })).json(); if (d && d.gems) { currentGemsList = d.gems; const s = document.getElementById('gem-selector'); s.innerHTML = '<option value="">🤖 全能助理</option>'; currentGemsList.forEach((g, i) => s.innerHTML += `<option value="${i}">💎 ${g.name}</option>`); } } catch (e) {} }
         
-        // ✨ 新增：拉取全域模型清單
         async function loadModels() { 
             try { 
                 const d = await (await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ mode: 'system', action: 'get_models' }) })).json(); 
@@ -553,19 +550,18 @@
                 let cc = code.replace(new RegExp('import\\s+.*?from\\s+[\'"].*?[\'"];?', 'g'), '').replace(new RegExp('export\\s+default\\s+function', 'g'), 'function');
                 let cm = code.replace(new RegExp('import\\s+.*?from\\s+[\'"].*?[\'"];?', 'g'), '').match(new RegExp('export\\s+default\\s+function\\s+([A-Za-z0-9_]+)'));
                 rc = `<!DOCTYPE html><html lang="zh-TW"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">` + 
-                     `<script src="https://unpkg.com/react@18/umd/react.production.min.js">\x3C/script>` + 
-                     `<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js">\x3C/script>` + 
-                     `<script src="https://unpkg.com/@babel/standalone/babel.min.js">\x3C/script>` + 
-                     `<script src="https://cdn.tailwindcss.com">\x3C/script>` + 
-                     `<script src="https://unpkg.com/lucide@latest">\x3C/script>` + 
-                     `</head><body class="bg-gray-50"><div id="root"></div><script type="text/babel">const { useState, useEffect, useRef, useMemo, useCallback } = React; try { ${cc} const root = ReactDOM.createRoot(document.getElementById('root')); root.render(<${cm ? cm[1] : 'App'} />); setTimeout(() => { if(window.lucide) window.lucide.createIcons(); }, 100); } catch(err) { document.getElementById('root').innerHTML = '<div class="p-4 text-red-700">渲染錯誤:<br>' + err.message + '</div>'; } \x3C/script></body></html>`;
+                     `<script src="https://unpkg.com/react@18/umd/react.production.min.js"><\/script>` + 
+                     `<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"><\/script>` + 
+                     `<script src="https://unpkg.com/@babel/standalone/babel.min.js"><\/script>` + 
+                     `<script src="https://cdn.tailwindcss.com"><\/script>` + 
+                     `<script src="https://unpkg.com/lucide@latest"><\/script>` + 
+                     `</head><body class="bg-gray-50"><div id="root"></div><script type="text/babel">const { useState, useEffect, useRef, useMemo, useCallback } = React; try { ${cc} const root = ReactDOM.createRoot(document.getElementById('root')); root.render(<${cm ? cm[1] : 'App'} />); setTimeout(() => { if(window.lucide) window.lucide.createIcons(); }, 100); } catch(err) { document.getElementById('root').innerHTML = '<div class="p-4 text-red-700">渲染錯誤:<br>' + err.message + '</div>'; } <\/script></body></html>`;
             }
             currentRenderCode = rc; document.getElementById('preview-modal').classList.remove('hidden'); document.getElementById('preview-modal').classList.add('flex'); document.getElementById('preview-iframe').srcdoc = rc;
         }
         function closePreview() { document.getElementById('preview-modal').classList.add('hidden'); document.getElementById('preview-modal').classList.remove('flex'); document.getElementById('preview-iframe').srcdoc = ''; }
         function refreshPreview() { if (currentRenderCode) document.getElementById('preview-iframe').srcdoc = currentRenderCode; }
 
-        // ✨ 啟動時同時載入 Session、Gems 與 Models
         window.onload = () => { 
             loadSessions(); 
             loadGems(); 
