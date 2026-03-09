@@ -67,8 +67,8 @@
 
         <div class="p-6">
             <div class="flex items-center gap-3 mb-8">
-                <div class="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
-                    <span class="material-symbols-rounded text-white text-xl">auto_awesome</span>
+                <div class="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center font-bold text-white shadow-lg">
+                    G
                 </div>
                 <h1 class="text-xl font-bold tracking-tight text-white">anyGem Agent</h1>
             </div>
@@ -98,7 +98,7 @@
                 </a>
             </div>
         </div>
-        <div class="p-4 border-t border-[#333] text-xs text-gray-500 text-center font-mono shrink-0">v86.35 Ultimate Rescue</div>
+        <div class="p-4 border-t border-[#333] text-xs text-gray-500 text-center font-mono shrink-0">v86.36 Ultimate Rescue</div>
     </aside>
 
     <!-- Main Chat Area -->
@@ -221,7 +221,6 @@
 
     <script>
         // ⚠️ 【非常重要】請將下方網址替換為您「剛剛最新部署」的 Google Apps Script Web App URL！
-        // 如果這個網址錯誤，或者後端未設定為「所有人 (Anyone)」，將會導致 TypeError: Failed to fetch 錯誤。
         const GAS_URL = "https://script.google.com/macros/s/AKfycbwsng4RBCTX67my46U4fv7BhDYT0CIZt95dL7DNCFJTGUJLZFd_854vRGeUsQ1_BjG9/exec";
 
         marked.use({
@@ -348,7 +347,10 @@
                 return await res.json();
             } catch (err) {
                 console.error("Fetch Error:", err);
-                showConnectionError(); // 觸發全域錯誤橫幅
+                // 只有在非 loadModels 的情況下顯示大型錯誤橫幅，避免初次載入太突兀
+                if (payload.action !== 'get_models' && payload.action !== 'get_gems') {
+                    showConnectionError();
+                }
                 throw err;
             }
         }
@@ -572,27 +574,53 @@
                     currentGemsList = d.gems; 
                     const s = document.getElementById('gem-selector'); 
                     s.innerHTML = '<option value="">🤖 全能助理</option>'; 
-                    currentGemsList.forEach((g, i) => s.innerHTML += `<option value="${i}">💎 ${g.name}</option>`); 
+                    currentGemsList.forEach((g, i) => {
+                        const opt = document.createElement('option');
+                        opt.value = i;
+                        opt.text = `💎 ${g.name}`;
+                        s.appendChild(opt);
+                    }); 
                 } 
             } catch (e) { 
                 console.error("Load Gems error:", e); 
             } 
         }
         
+        // ✨ 模型選擇器邏輯修復：確保能正確從後端 Models 工作表拉取資料
         async function loadModels() { 
             try { 
                 const d = await fetchFromGAS({ mode: 'system', action: 'get_models' }); 
                 const s = document.getElementById('model-selector'); 
+                
+                // 1. 清空選單並加入首個預設項
                 s.innerHTML = '<option value="">🧠 預設模型 (自動)</option>'; 
-                if (d && d.models && d.models.length > 0) { 
-                    d.models.forEach(m => s.innerHTML += `<option value="${m.id}">${m.name}</option>`); 
+                
+                // 2. 如果後端有回傳 Models 工作表的清單
+                if (d && d.models && Array.isArray(d.models) && d.models.length > 0) { 
+                    console.log("成功從試算表載入模型清單:", d.models);
+                    d.models.forEach(m => {
+                        const opt = document.createElement('option');
+                        opt.value = m.id;
+                        opt.text = m.name;
+                        s.appendChild(opt);
+                    }); 
                 } else {
-                    s.innerHTML += `<option value="gemini-2.5-flash">⚡ 閃電 (2.5 Flash)</option>`;
-                    s.innerHTML += `<option value="gemini-2.5-pro">🧠 專家 (2.5 Pro)</option>`;
-                    s.innerHTML += `<option value="gemini-2.0-pro-exp-02-05">💡 實驗 (2.0 Pro Exp)</option>`;
+                    // 3. 備援方案：如果工作表找不到或沒資料，則使用預設內建名單
+                    console.warn("後端 Models 工作表為空或未讀取，啟用備援名單。");
+                    const defaults = [
+                        { name: "⚡ 閃電 (2.5 Flash)", id: "gemini-2.5-flash" },
+                        { name: "🧠 專家 (2.5 Pro)", id: "gemini-2.5-pro" },
+                        { name: "💡 實驗 (2.0 Pro Exp)", id: "gemini-2.0-pro-exp-02-05" }
+                    ];
+                    defaults.forEach(m => {
+                        const opt = document.createElement('option');
+                        opt.value = m.id;
+                        opt.text = m.name;
+                        s.appendChild(opt);
+                    });
                 }
             } catch (e) { 
-                console.error("Load Models error:", e); 
+                console.error("Load Models 發生異常，請檢查後端邏輯:", e); 
             } 
         }
 
