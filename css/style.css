@@ -24,37 +24,3 @@ body { background-color: #131314; color: #e3e3e3; font-family: 'Inter', system-u
 
 @keyframes pulse-ring { 0% { transform: scale(0.8); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); } 70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); } 100% { transform: scale(0.8); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
 .recording-pulse { animation: pulse-ring 2s infinite; background-color: rgba(239, 68, 68, 0.15); border-radius: 50%; color: #ef4444 !important; }
-
-
-3. js/config.js (全域變數與設定)
-
-存放所有的跨檔案共享變數與基礎工具函數。
-
-// ⚠️ 部署後，請確認此處替換為您的 Apps Script Web App URL
-const GAS_URL = "[https://script.google.com/macros/s/AKfycbwsng4RBCTX67my46U4fv7BhDYT0CIZt95dL7DNCFJTGUJLZFd_854vRGeUsQ1_BjG9/exec](https://script.google.com/macros/s/AKfycbwsng4RBCTX67my46U4fv7BhDYT0CIZt95dL7DNCFJTGUJLZFd_854vRGeUsQ1_BjG9/exec)";
-
-// 輔助函式：產生 UUID
-function generateUUID() { 
-    return 'xxxx-4xxx-yxxx'.replace(/[xy]/g, c => (c === 'x' ? (Math.random() * 16 | 0) : (Math.random() * 16 | 0 & 0x3 | 0x8)).toString(16)); 
-}
-
-// 系統核心狀態變數
-let currentSessionId = generateUUID();
-let currentImageData = null, currentMimeType = null, currentDocumentText = null, currentDocumentName = null, currentYouTubeId = null;
-let isWaiting = false, currentRenderCode = "", abortController = null, silenceTimer = null, currentGemsList = []; 
-
-// DOM 節點快取
-const chatContainer = document.getElementById('chat-container');
-const userInput = document.getElementById('user-input');
-const sendBtn = document.getElementById('send-btn');
-const sendBtnIcon = sendBtn.querySelector('.material-symbols-rounded');
-
-// Marked.js 渲染器設定 (處理超連結另開視窗)
-marked.use({
-    renderer: {
-        link(hrefOrToken, title, text) {
-            let h = hrefOrToken.href || hrefOrToken, t = hrefOrToken.title || title, txt = hrefOrToken.text || text;
-            return `<a href="${h}" ${t ? `title="${t}"` : ''} target="_blank" rel="noopener noreferrer">${txt}</a>`;
-        }
-    }
-});
